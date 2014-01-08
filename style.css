@@ -1,0 +1,52 @@
+
+div.CodeMirror {
+    padding: 1em;
+    float: left;
+}
+
+div.CodeMirror:nth-of-type(2n) {
+    float: right;
+}
+
+div.CodeMirror:nth-of-type(2n).cm-s-ambiance {
+    box-shadow: none;
+    background-color: #333333;
+}
+
+.macro-editor {
+    position: relative;
+    border-top: 1px solid #333333;
+    border-bottom: 1px solid #333333;
+    width: 1000px;
+    margin-left: -150px;
+}
+
+.macro-editor:after {
+    content: ' ';
+    clear: both;
+    display: block;
+}
+
+.status {
+    display: none;
+    position: absolute;
+    width: 100%;
+    bottom: 0;
+    left: 0;
+    background-color: rgba(0, 0, 0, .5);
+    color: white;
+    padding: .5em 1em;
+    font-size: .75em;
+}
+
+.status.error {
+    background-color: red;
+}
+
+.CodeMirror {
+  height: auto;
+}
+
+/* .CodeMirror-scroll { */
+/*   overflow: auto; */
+/* } */
