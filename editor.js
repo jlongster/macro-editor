@@ -84,9 +84,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // This is the wonky part. If I do this immediately the worker
     // just doesn't respond, but if I wait a little bit it responds
     // fine.
-    setTimeout(function() {
-        editors[0].compile();
-    }, 1000);
+    // setTimeout(function() {
+    //     editors[0].compile();
+    // }, 1000);
 
     // Since a scroll event is initially triggered if you bind to it
     // immediately, wait a little bit as well. We won't have to do
