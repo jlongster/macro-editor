@@ -1,6 +1,6 @@
 
 document.addEventListener('DOMContentLoaded', function() {
-    var worker = new Worker('/macro-editor/sweetjs/worker.js');
+    var worker = new Worker('/s/macro-editor/sweetjs/worker.js');
     var receivers = {};
     var baseid = 1;
 
