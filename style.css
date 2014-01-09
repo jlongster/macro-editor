@@ -2,21 +2,27 @@
 div.CodeMirror {
     padding: 1em;
     float: left;
+    border-right: 1px solid #d0d0d0;
+}
+
+div.CodeMirror.cm-s-ambiance {
+    box-shadow: none;
 }
 
 div.CodeMirror:nth-of-type(2n) {
     float: right;
+    border-left: 1px solid #d0d0d0;
+    border-right: 0;
 }
 
 div.CodeMirror:nth-of-type(2n).cm-s-ambiance {
-    box-shadow: none;
-    background-color: #333333;
 }
 
 .macro-editor {
     position: relative;
     border-top: 1px solid #333333;
     width: 1000px;
+    margin: 3em 0;
     margin-left: -150px;
 }
 
@@ -33,15 +39,15 @@ div.CodeMirror:nth-of-type(2n).cm-s-ambiance {
     left: 0;
     bottom: 0;
     width: auto;
-    background: #333333;
-    color: white;
-    padding: .5em 1em;
+    color: #333333;
+    padding: .35em 1em;
     font-size: .75em;
     z-index: 100;
 }
 
 .status.error {
     background-color: red;
+    color: white;
     width: 100%;
     top: 100%;
     bottom: auto;
@@ -54,13 +60,14 @@ div.CodeMirror:nth-of-type(2n).cm-s-ambiance {
 }
 
 .controls button {
+    display: inline-block;
     margin: .25em;
     font-size: .9em;
     border-top: 1px solid #d0d0d0;
     border-left: 1px solid #d0d0d0;
     border-bottom: 1px solid #a0a0a0;
     border-right: 1px solid #a0a0a0;
-
+    background-color: #d9d9d9;
     width: 5em;
 }
 

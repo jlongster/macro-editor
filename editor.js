@@ -41,6 +41,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     status.show().addClass('error').text(err);
                 }
                 else {
+                    if(opts.maxExpands != null) {
+                        status.show().text('step: ' + opts.maxExpands);
+                    }
                     out.setValue(src);
                 }
             }
@@ -79,11 +82,13 @@ document.addEventListener('DOMContentLoaded', function() {
             '</div>'
         );
 
+        var maxExpands = 0;
         el.find('button.step').on('click', function() {
-            this.compile({ maxExpands: 1 });
+            this.compile({ maxExpands: maxExpands++ });
         }.bind(this));
 
         el.find('button.reset').on('click', function() {
+            maxExpands = 0;
             inputMirror.setValue(content);
         });
 
@@ -95,11 +100,6 @@ document.addEventListener('DOMContentLoaded', function() {
             this.hasCompiled = true;
             compile(this.uid, inputMirror, outputMirror, status, opts);
         }.bind(this);
-
-        this.focus = function() {
-            this.hasFocused = true;
-            inputMirror.focus();
-        };
 
         this.setValue = function(val) {
             inputMirror.setValue(val);
@@ -131,8 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // all the editors are compiled lazily, when the user scrolls an
-    // editor into view. it also focuses the editor in the view to
-    // emphasize that it's editable text
+    // editor into view
     $(window).on('scroll', function(e) {
         var win = {
             width: (window.innerWidth ||
@@ -148,13 +147,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 if(!this.hasCompiled) {
                     this.compile();
                 }
-
-                if(!this.hasFocused) {
-                    this.focus();
-                }
             }
         });
     }.bind(this));
+
+    // display sweet.js version
+
+    $('.sweet-version').text('commit b885ea1a83b057b89e37d63a94b9ca7fee8b1bb3 on Dec 14');
 
     // changes
 
@@ -194,7 +193,32 @@ document.addEventListener('DOMContentLoaded', function() {
             '}\n\n' +
             'foo => 5;\n' +
             'foo 6;\n' +
-            'foo [bar];'
+            'foo [bar];',
+
+        // third example
+        5: 'macro foo {\n' +
+        '  rule { $x } => { $x + \'any\' }\n' +
+        '  rule { $x:expr } => { $x + \'expr\' }\n' +
+        '}\n\n' +
+        'foo baz();',
+
+        6: 'macro foo {\n' +
+        '  rule { $x:expr } => { $x + \'expr\' }\n' +
+        '  rule { $x } => { $x + \'any\' }\n' +
+        '}\n\n' +
+        'foo baz();',
+
+        // fourth example
+        7: 'macro tag {\n' +
+            '  rule { $name [$el ...] } => {\n' +
+            '    [$name, $el]\n' +
+            '  }\n\n' +
+            '  rule { $name $id:ident } => {\n' +
+            '    ($id.unshift($name), $id)\n' +
+            '  }\n' +
+            '}\n\n' +
+            'tag "foo" [1, 2, 3];\n' +
+            'tag "bar" arr;\n'
 
     };
 });

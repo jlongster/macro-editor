@@ -1,7 +1,7 @@
-(function (root$2121, factory$2122) {
+(function (root$1943, factory$1944) {
     if (typeof exports === 'object') {
         // CommonJS
-        factory$2122(exports, require('underscore'), require('es6-collections'), require('./parser'), require('./expander'), require('./syntax'));
+        factory$1944(exports, require('underscore'), require('es6-collections'), require('./parser'), require('./expander'), require('./syntax'));
     } else if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
         define([
@@ -11,286 +11,255 @@
             'parser',
             'expander',
             'syntax'
-        ], factory$2122);
+        ], factory$1944);
     }
-}(this, function (exports$2123, _$2124, es6$2125, parser$2126, expander$2127, syntax$2128) {
-    var get_expression$2129 = expander$2127.get_expression;
-    var syntaxFromToken$2130 = syntax$2128.syntaxFromToken;
-    var makePunc$2131 = syntax$2128.makePunc;
-    var joinSyntax$2132 = syntax$2128.joinSyntax;
-    var joinSyntaxArr$2133 = syntax$2128.joinSyntaxArr;
-    var assert$2134 = syntax$2128.assert;
-    var throwSyntaxError$2135 = syntax$2128.throwSyntaxError;
-    var push$2136 = Array.prototype.push;
+}(this, function (exports$1945, _$1946, es6$1947, parser$1948, expander$1949, syntax$1950) {
+    var get_expression$1951 = expander$1949.get_expression;
+    var syntaxFromToken$1952 = syntax$1950.syntaxFromToken;
+    var makePunc$1953 = syntax$1950.makePunc;
+    var joinSyntax$1954 = syntax$1950.joinSyntax;
+    var joinSyntaxArr$1955 = syntax$1950.joinSyntaxArr;
+    var assert$1956 = syntax$1950.assert;
+    var throwSyntaxError$1957 = syntax$1950.throwSyntaxError;
     // ([...CSyntax]) -> [...Str]
-    function freeVarsInPattern$2137(pattern$2155) {
-        var fv$2156 = [];
-        _$2124.each(pattern$2155, function (pat$2157) {
-            if (isPatternVar$2141(pat$2157)) {
-                fv$2156.push(pat$2157.token.value);
-            } else if (pat$2157.token.type === parser$2126.Token.Delimiter) {
-                push$2136.apply(fv$2156, freeVarsInPattern$2137(pat$2157.token.inner));
+    function freeVarsInPattern$1958(pattern$1973) {
+        var fv$1974 = [];
+        _$1946.each(pattern$1973, function (pat$1975) {
+            if (isPatternVar$1962(pat$1975)) {
+                fv$1974.push(pat$1975.token.value);
+            } else if (pat$1975.token.type === parser$1948.Token.Delimiter) {
+                fv$1974 = fv$1974.concat(freeVarsInPattern$1958(pat$1975.token.inner));
             }
         });
-        return fv$2156;
+        return fv$1974;
     }
-    function typeIsLiteral$2138(type$2158) {
-        return type$2158 === parser$2126.Token.NullLiteral || type$2158 === parser$2126.Token.NumericLiteral || type$2158 === parser$2126.Token.StringLiteral || type$2158 === parser$2126.Token.RegexLiteral || type$2158 === parser$2126.Token.BooleanLiteral;
+    function typeIsLiteral$1959(type$1976) {
+        return type$1976 === parser$1948.Token.NullLiteral || type$1976 === parser$1948.Token.NumericLiteral || type$1976 === parser$1948.Token.StringLiteral || type$1976 === parser$1948.Token.RegexLiteral || type$1976 === parser$1948.Token.BooleanLiteral;
     }
-    function containsPatternVar$2139(patterns$2159) {
-        return _$2124.any(patterns$2159, function (pat$2160) {
-            if (pat$2160.token.type === parser$2126.Token.Delimiter) {
-                return containsPatternVar$2139(pat$2160.token.inner);
+    function containsPatternVar$1960(patterns$1977) {
+        return _$1946.any(patterns$1977, function (pat$1978) {
+            if (pat$1978.token.type === parser$1948.Token.Delimiter) {
+                return containsPatternVar$1960(pat$1978.token.inner);
             }
-            return isPatternVar$2141(pat$2160);
+            return isPatternVar$1962(pat$1978);
         });
     }
-    function delimIsSeparator$2140(delim$2161) {
-        return delim$2161 && delim$2161.token && delim$2161.token.type === parser$2126.Token.Delimiter && delim$2161.token.value === '()' && delim$2161.token.inner.length === 1 && delim$2161.token.inner[0].token.type !== parser$2126.Token.Delimiter && !containsPatternVar$2139(delim$2161.token.inner);
+    function delimIsSeparator$1961(delim$1979) {
+        return delim$1979 && delim$1979.token && delim$1979.token.type === parser$1948.Token.Delimiter && delim$1979.token.value === '()' && delim$1979.token.inner.length === 1 && delim$1979.token.inner[0].token.type !== parser$1948.Token.Delimiter && !containsPatternVar$1960(delim$1979.token.inner);
     }
-    function isPatternVar$2141(stx$2162) {
-        return stx$2162.token.value[0] === '$' && stx$2162.token.value !== '$';
+    function isPatternVar$1962(stx$1980) {
+        return stx$1980.token.value[0] === '$' && stx$1980.token.value !== '$';
     }
     // ([...{level: Num, match: [...CSyntax]}], Str) -> [...CSyntax]
-    function joinRepeatedMatch$2142(tojoin$2163, punc$2164) {
-        return _$2124.reduce(_$2124.rest(tojoin$2163, 1), function (acc$2165, join$2166) {
-            if (punc$2164 === ' ') {
-                return acc$2165.concat(join$2166.match);
+    function joinRepeatedMatch$1963(tojoin$1981, punc$1982) {
+        return _$1946.reduce(_$1946.rest(tojoin$1981, 1), function (acc$1983, join$1984) {
+            if (punc$1982 === ' ') {
+                return acc$1983.concat(join$1984.match);
             }
-            return acc$2165.concat(makePunc$2131(punc$2164, _$2124.first(join$2166.match)), join$2166.match);
-        }, _$2124.first(tojoin$2163).match);
+            return acc$1983.concat(makePunc$1953(punc$1982, _$1946.first(join$1984.match)), join$1984.match);
+        }, _$1946.first(tojoin$1981).match);
     }
     // take the line context (range, lineNumber)
     // (CSyntax, [...CSyntax]) -> [...CSyntax]
-    function takeLineContext$2143(from$2167, to$2168) {
-        return _$2124.map(to$2168, function (stx$2169) {
-            return takeLine$2144(from$2167, stx$2169);
+    function takeLineContext$1964(from$1985, to$1986) {
+        return _$1946.map(to$1986, function (stx$1987) {
+            return takeLine$1965(from$1985, stx$1987);
         });
     }
     // (CSyntax, CSyntax) -> CSyntax
-    function takeLine$2144(from$2170, to$2171) {
-        var next$2172;
-        if (to$2171.token.type === parser$2126.Token.Delimiter) {
-            if (from$2170.token.type === parser$2126.Token.Delimiter) {
-                next$2172 = syntaxFromToken$2130({
-                    type: parser$2126.Token.Delimiter,
-                    value: to$2171.token.value,
-                    inner: takeLineContext$2143(from$2170, to$2171.token.inner),
-                    startRange: from$2170.token.startRange,
-                    endRange: from$2170.token.endRange,
-                    startLineNumber: from$2170.token.startLineNumber,
-                    startLineStart: from$2170.token.startLineStart,
-                    endLineNumber: from$2170.token.endLineNumber,
-                    endLineStart: from$2170.token.endLineStart,
-                    sm_startLineNumber: to$2171.token.startLineNumber,
-                    sm_endLineNumber: to$2171.token.endLineNumber,
-                    sm_startLineStart: to$2171.token.startLineStart,
-                    sm_endLineStart: to$2171.token.endLineStart,
-                    sm_startRange: to$2171.token.startRange,
-                    sm_endRange: to$2171.token.endRange
-                }, to$2171);
+    function takeLine$1965(from$1988, to$1989) {
+        if (to$1989.token.type === parser$1948.Token.Delimiter) {
+            var next$1990;
+            if (from$1988.token.type === parser$1948.Token.Delimiter) {
+                next$1990 = syntaxFromToken$1952({
+                    type: parser$1948.Token.Delimiter,
+                    value: to$1989.token.value,
+                    inner: takeLineContext$1964(from$1988, to$1989.token.inner),
+                    startRange: from$1988.token.startRange,
+                    endRange: from$1988.token.endRange,
+                    startLineNumber: from$1988.token.startLineNumber,
+                    startLineStart: from$1988.token.startLineStart,
+                    endLineNumber: from$1988.token.endLineNumber,
+                    endLineStart: from$1988.token.endLineStart,
+                    sm_startLineNumber: to$1989.token.startLineNumber,
+                    sm_endLineNumber: to$1989.token.endLineNumber,
+                    sm_startLineStart: to$1989.token.startLineStart,
+                    sm_endLineStart: to$1989.token.endLineStart,
+                    sm_startRange: to$1989.token.startRange,
+                    sm_endRange: to$1989.token.endRange
+                }, to$1989);
             } else {
-                next$2172 = syntaxFromToken$2130({
-                    type: parser$2126.Token.Delimiter,
-                    value: to$2171.token.value,
-                    inner: takeLineContext$2143(from$2170, to$2171.token.inner),
-                    startRange: from$2170.token.range,
-                    endRange: from$2170.token.range,
-                    startLineNumber: from$2170.token.lineNumber,
-                    startLineStart: from$2170.token.lineStart,
-                    endLineNumber: from$2170.token.lineNumber,
-                    endLineStart: from$2170.token.lineStart,
-                    sm_startLineNumber: to$2171.token.startLineNumber,
-                    sm_endLineNumber: to$2171.token.endLineNumber,
-                    sm_startLineStart: to$2171.token.startLineStart,
-                    sm_endLineStart: to$2171.token.endLineStart,
-                    sm_startRange: to$2171.token.startRange,
-                    sm_endRange: to$2171.token.endRange
-                }, to$2171);
+                next$1990 = syntaxFromToken$1952({
+                    type: parser$1948.Token.Delimiter,
+                    value: to$1989.token.value,
+                    inner: takeLineContext$1964(from$1988, to$1989.token.inner),
+                    startRange: from$1988.token.range,
+                    endRange: from$1988.token.range,
+                    startLineNumber: from$1988.token.lineNumber,
+                    startLineStart: from$1988.token.lineStart,
+                    endLineNumber: from$1988.token.lineNumber,
+                    endLineStart: from$1988.token.lineStart,
+                    sm_startLineNumber: to$1989.token.startLineNumber,
+                    sm_endLineNumber: to$1989.token.endLineNumber,
+                    sm_startLineStart: to$1989.token.startLineStart,
+                    sm_endLineStart: to$1989.token.endLineStart,
+                    sm_startRange: to$1989.token.startRange,
+                    sm_endRange: to$1989.token.endRange
+                }, to$1989);
             }
         } else {
-            if (from$2170.token.type === parser$2126.Token.Delimiter) {
-                next$2172 = syntaxFromToken$2130({
-                    value: to$2171.token.value,
-                    type: to$2171.token.type,
-                    lineNumber: from$2170.token.startLineNumber,
-                    lineStart: from$2170.token.startLineStart,
-                    range: from$2170.token.startRange,
-                    sm_lineNumber: to$2171.token.lineNumber,
-                    sm_lineStart: to$2171.token.lineStart,
-                    sm_range: to$2171.token.range
-                }, to$2171);
+            if (from$1988.token.type === parser$1948.Token.Delimiter) {
+                next$1990 = syntaxFromToken$1952({
+                    value: to$1989.token.value,
+                    type: to$1989.token.type,
+                    lineNumber: from$1988.token.startLineNumber,
+                    lineStart: from$1988.token.startLineStart,
+                    range: from$1988.token.startRange,
+                    sm_lineNumber: to$1989.token.lineNumber,
+                    sm_lineStart: to$1989.token.lineStart,
+                    sm_range: to$1989.token.range
+                }, to$1989);
             } else {
-                next$2172 = syntaxFromToken$2130({
-                    value: to$2171.token.value,
-                    type: to$2171.token.type,
-                    lineNumber: from$2170.token.lineNumber,
-                    lineStart: from$2170.token.lineStart,
-                    range: from$2170.token.range,
-                    sm_lineNumber: to$2171.token.lineNumber,
-                    sm_lineStart: to$2171.token.lineStart,
-                    sm_range: to$2171.token.range
-                }, to$2171);
+                next$1990 = syntaxFromToken$1952({
+                    value: to$1989.token.value,
+                    type: to$1989.token.type,
+                    lineNumber: from$1988.token.lineNumber,
+                    lineStart: from$1988.token.lineStart,
+                    range: from$1988.token.range,
+                    sm_lineNumber: to$1989.token.lineNumber,
+                    sm_lineStart: to$1989.token.lineStart,
+                    sm_range: to$1989.token.range
+                }, to$1989);
             }
         }
-        if (to$2171.token.leadingComments) {
-            next$2172.token.leadingComments = to$2171.token.leadingComments;
+        if (to$1989.token.leadingComments) {
+            next$1990.token.leadingComments = to$1989.token.leadingComments;
         }
-        if (to$2171.token.trailingComments) {
-            next$2172.token.trailingComments = to$2171.token.trailingComments;
+        if (to$1989.token.trailingComments) {
+            next$1990.token.trailingComments = to$1989.token.trailingComments;
         }
-        return next$2172;
+        return next$1990;
     }
-    function reversePattern$2145(patterns$2173) {
-        var len$2174 = patterns$2173.length;
-        var pat$2175;
-        return _$2124.reduceRight(patterns$2173, function (acc$2176, pat$2175) {
-            if (pat$2175.class === 'pattern_group') {
-                pat$2175.token.inner = reversePattern$2145(pat$2175.token.inner);
-            }
-            if (pat$2175.repeat) {
-                pat$2175.leading = !pat$2175.leading;
-            }
-            acc$2176.push(pat$2175);
-            return acc$2176;
-        }, []);
-    }
-    function loadLiteralGroup$2146(patterns$2178) {
-        _$2124.forEach(patterns$2178, function (patStx$2179) {
-            if (patStx$2179.token.type === parser$2126.Token.Delimiter) {
-                patStx$2179.token.inner = loadLiteralGroup$2146(patStx$2179.token.inner);
+    function loadLiteralGroup$1966(patterns$1991) {
+        _$1946.forEach(patterns$1991, function (patStx$1992) {
+            if (patStx$1992.token.type === parser$1948.Token.Delimiter) {
+                patStx$1992.token.inner = loadLiteralGroup$1966(patStx$1992.token.inner);
             } else {
-                patStx$2179.class = 'pattern_literal';
+                patStx$1992.class = 'pattern_literal';
             }
         });
-        return patterns$2178;
+        return patterns$1991;
     }
-    function loadPattern$2147(patterns$2180, reverse$2181) {
-        var patts$2182 = _$2124.chain(patterns$2180).reduce(function (acc$2183, patStx$2184, idx$2185) {
-                var last$2186 = patterns$2180[idx$2185 - 1];
-                var lastLast$2187 = patterns$2180[idx$2185 - 2];
-                var next$2188 = patterns$2180[idx$2185 + 1];
-                var nextNext$2189 = patterns$2180[idx$2185 + 2];
-                // skip over the `:lit` part of `$x:lit`
-                if (patStx$2184.token.value === ':') {
-                    if (last$2186 && isPatternVar$2141(last$2186) && !isPatternVar$2141(next$2188)) {
-                        return acc$2183;
-                    }
+    function loadPattern$1967(patterns$1993) {
+        return _$1946.chain(patterns$1993).reduce(function (acc$1994, patStx$1995, idx$1996) {
+            var last$1997 = patterns$1993[idx$1996 - 1];
+            var lastLast$1998 = patterns$1993[idx$1996 - 2];
+            var next$1999 = patterns$1993[idx$1996 + 1];
+            var nextNext$2000 = patterns$1993[idx$1996 + 2];
+            // skip over the `:lit` part of `$x:lit`
+            if (patStx$1995.token.value === ':') {
+                if (last$1997 && isPatternVar$1962(last$1997) && !isPatternVar$1962(next$1999)) {
+                    return acc$1994;
                 }
-                if (last$2186 && last$2186.token.value === ':') {
-                    if (lastLast$2187 && isPatternVar$2141(lastLast$2187) && !isPatternVar$2141(patStx$2184)) {
-                        return acc$2183;
-                    }
+            }
+            if (last$1997 && last$1997.token.value === ':') {
+                if (lastLast$1998 && isPatternVar$1962(lastLast$1998) && !isPatternVar$1962(patStx$1995)) {
+                    return acc$1994;
                 }
-                // skip over $
-                if (patStx$2184.token.value === '$' && next$2188 && next$2188.token.type === parser$2126.Token.Delimiter) {
-                    return acc$2183;
-                }
-                if (isPatternVar$2141(patStx$2184)) {
-                    if (next$2188 && next$2188.token.value === ':' && !isPatternVar$2141(nextNext$2189)) {
-                        if (typeof nextNext$2189 === 'undefined') {
-                            throwSyntaxError$2135('patterns', 'expecting a pattern class following a `:`', next$2188);
-                        }
-                        patStx$2184.class = nextNext$2189.token.value;
-                    } else {
-                        patStx$2184.class = 'token';
+            }
+            // skip over $
+            if (patStx$1995.token.value === '$' && next$1999 && next$1999.token.type === parser$1948.Token.Delimiter) {
+                return acc$1994;
+            }
+            if (isPatternVar$1962(patStx$1995)) {
+                if (next$1999 && next$1999.token.value === ':' && !isPatternVar$1962(nextNext$2000)) {
+                    if (typeof nextNext$2000 === 'undefined') {
+                        throwSyntaxError$1957('patterns', 'expecting a pattern class following a `:`', next$1999);
                     }
-                } else if (patStx$2184.token.type === parser$2126.Token.Delimiter) {
-                    if (last$2186 && last$2186.token.value === '$') {
-                        patStx$2184.class = 'pattern_group';
-                    }
-                    // Leave literal groups as is
-                    if (patStx$2184.class === 'pattern_group' && patStx$2184.token.value === '[]') {
-                        patStx$2184.token.inner = loadLiteralGroup$2146(patStx$2184.token.inner);
-                    } else {
-                        patStx$2184.token.inner = loadPattern$2147(patStx$2184.token.inner);
-                    }
+                    patStx$1995.class = nextNext$2000.token.value;
                 } else {
-                    patStx$2184.class = 'pattern_literal';
+                    patStx$1995.class = 'token';
                 }
-                acc$2183.push(patStx$2184);
-                return acc$2183;
-            }    // then second pass to mark repeat and separator
-, []).reduce(function (acc$2190, patStx$2191, idx$2192, patterns$2193) {
-                var separator$2194 = patStx$2191.separator || ' ';
-                var repeat$2195 = patStx$2191.repeat || false;
-                var next$2196 = patterns$2193[idx$2192 + 1];
-                var nextNext$2197 = patterns$2193[idx$2192 + 2];
-                if (next$2196 && next$2196.token.value === '...') {
-                    repeat$2195 = true;
-                    separator$2194 = ' ';
-                } else if (delimIsSeparator$2140(next$2196) && nextNext$2197 && nextNext$2197.token.value === '...') {
-                    repeat$2195 = true;
-                    assert$2134(next$2196.token.inner.length === 1, 'currently assuming all separators are a single token');
-                    separator$2194 = next$2196.token.inner[0].token.value;
+            } else if (patStx$1995.token.type === parser$1948.Token.Delimiter) {
+                if (last$1997 && last$1997.token.value === '$') {
+                    patStx$1995.class = 'pattern_group';
                 }
-                // skip over ... and (,)
-                if (patStx$2191.token.value === '...' || delimIsSeparator$2140(patStx$2191) && next$2196 && next$2196.token.value === '...') {
-                    return acc$2190;
+                // Leave literal groups as is
+                if (patStx$1995.class === 'pattern_group' && patStx$1995.token.value === '[]') {
+                    patStx$1995.token.inner = loadLiteralGroup$1966(patStx$1995.token.inner);
+                } else {
+                    patStx$1995.token.inner = loadPattern$1967(patStx$1995.token.inner);
                 }
-                patStx$2191.repeat = repeat$2195;
-                patStx$2191.separator = separator$2194;
-                acc$2190.push(patStx$2191);
-                return acc$2190;
-            }, []).value();
-        return reverse$2181 ? reversePattern$2145(patts$2182) : patts$2182;
-    }
-    function cachedTermMatch$2148(stx$2198, term$2199) {
-        var res$2200 = [];
-        var i$2201 = 0;
-        while (stx$2198[i$2201] && stx$2198[i$2201].term === term$2199) {
-            res$2200.unshift(stx$2198[i$2201]);
-            i$2201++;
-        }
-        return {
-            result: term$2199,
-            destructed: res$2200,
-            rest: stx$2198.slice(res$2200.length)
-        };
+            } else {
+                patStx$1995.class = 'pattern_literal';
+            }
+            return acc$1994.concat(patStx$1995);
+        }    // then second pass to mark repeat and separator
+, []).reduce(function (acc$2001, patStx$2002, idx$2003, patterns$2004) {
+            var separator$2005 = patStx$2002.separator || ' ';
+            var repeat$2006 = patStx$2002.repeat || false;
+            var next$2007 = patterns$2004[idx$2003 + 1];
+            var nextNext$2008 = patterns$2004[idx$2003 + 2];
+            if (next$2007 && next$2007.token.value === '...') {
+                repeat$2006 = true;
+                separator$2005 = ' ';
+            } else if (delimIsSeparator$1961(next$2007) && nextNext$2008 && nextNext$2008.token.value === '...') {
+                repeat$2006 = true;
+                assert$1956(next$2007.token.inner.length === 1, 'currently assuming all separators are a single token');
+                separator$2005 = next$2007.token.inner[0].token.value;
+            }
+            // skip over ... and (,)
+            if (patStx$2002.token.value === '...' || delimIsSeparator$1961(patStx$2002) && next$2007 && next$2007.token.value === '...') {
+                return acc$2001;
+            }
+            patStx$2002.repeat = repeat$2006;
+            patStx$2002.separator = separator$2005;
+            return acc$2001.concat(patStx$2002);
+        }, []).value();
     }
     // (Str, [...CSyntax], MacroEnv) -> {result: null or [...CSyntax], rest: [...CSyntax]}
-    function matchPatternClass$2149(patternClass$2202, stx$2203, env$2204) {
-        var result$2205, rest$2206, match$2207;
+    function matchPatternClass$1968(patternClass$2009, stx$2010, env$2011) {
+        var result$2012, rest$2013;
         // pattern has no parse class
-        if (patternClass$2202 === 'token' && stx$2203[0] && stx$2203[0].token.type !== parser$2126.Token.EOF) {
-            result$2205 = [stx$2203[0]];
-            rest$2206 = stx$2203.slice(1);
-        } else if (patternClass$2202 === 'lit' && stx$2203[0] && typeIsLiteral$2138(stx$2203[0].token.type)) {
-            result$2205 = [stx$2203[0]];
-            rest$2206 = stx$2203.slice(1);
-        } else if (patternClass$2202 === 'ident' && stx$2203[0] && stx$2203[0].token.type === parser$2126.Token.Identifier) {
-            result$2205 = [stx$2203[0]];
-            rest$2206 = stx$2203.slice(1);
-        } else if (stx$2203.length > 0 && patternClass$2202 === 'VariableStatement') {
-            match$2207 = stx$2203[0].term ? cachedTermMatch$2148(stx$2203, stx$2203[0].term) : expander$2127.enforest(stx$2203, expander$2127.makeExpanderContext({ env: env$2204 }));
-            if (match$2207.result && match$2207.result.hasPrototype(expander$2127.VariableStatement)) {
-                result$2205 = match$2207.destructed || match$2207.result.destruct(false);
-                rest$2206 = match$2207.rest;
+        if (patternClass$2009 === 'token' && stx$2010[0] && stx$2010[0].token.type !== parser$1948.Token.EOF) {
+            result$2012 = [stx$2010[0]];
+            rest$2013 = stx$2010.slice(1);
+        } else if (patternClass$2009 === 'lit' && stx$2010[0] && typeIsLiteral$1959(stx$2010[0].token.type)) {
+            result$2012 = [stx$2010[0]];
+            rest$2013 = stx$2010.slice(1);
+        } else if (patternClass$2009 === 'ident' && stx$2010[0] && stx$2010[0].token.type === parser$1948.Token.Identifier) {
+            result$2012 = [stx$2010[0]];
+            rest$2013 = stx$2010.slice(1);
+        } else if (stx$2010.length > 0 && patternClass$2009 === 'VariableStatement') {
+            var match$2014 = expander$1949.enforest(stx$2010, expander$1949.makeExpanderContext({ env: env$2011 }));
+            if (match$2014.result && match$2014.result.hasPrototype(expander$1949.VariableStatement)) {
+                result$2012 = match$2014.result.destruct(false);
+                rest$2013 = match$2014.rest;
             } else {
-                result$2205 = null;
-                rest$2206 = stx$2203;
+                result$2012 = null;
+                rest$2013 = stx$2010;
             }
-        } else if (stx$2203.length > 0 && patternClass$2202 === 'expr') {
-            match$2207 = stx$2203[0].term ? cachedTermMatch$2148(stx$2203, stx$2203[0].term) : expander$2127.get_expression(stx$2203, expander$2127.makeExpanderContext({ env: env$2204 }));
-            if (match$2207.result === null || !match$2207.result.hasPrototype(expander$2127.Expr)) {
-                result$2205 = null;
-                rest$2206 = stx$2203;
+        } else if (stx$2010.length > 0 && patternClass$2009 === 'expr') {
+            var match$2014 = expander$1949.get_expression(stx$2010, expander$1949.makeExpanderContext({ env: env$2011 }));
+            if (match$2014.result === null || !match$2014.result.hasPrototype(expander$1949.Expr)) {
+                result$2012 = null;
+                rest$2013 = stx$2010;
             } else {
-                result$2205 = match$2207.destructed || match$2207.result.destruct(false);
-                rest$2206 = match$2207.rest;
+                result$2012 = match$2014.result.destruct(false);
+                rest$2013 = match$2014.rest;
             }
         } else {
-            result$2205 = null;
-            rest$2206 = stx$2203;
+            result$2012 = null;
+            rest$2013 = stx$2010;
         }
         return {
-            result: result$2205,
-            rest: rest$2206
+            result: result$2012,
+            rest: rest$2013
         };
     }
     // attempt to match patterns against stx
     // ([...Pattern], [...Syntax], Env) -> { result: [...Syntax], rest: [...Syntax], patternEnv: PatternEnv }
-    function matchPatterns$2150(patterns$2208, stx$2209, env$2210, topLevel$2211) {
+    function matchPatterns$1969(patterns$2015, stx$2016, env$2017, topLevel$2018) {
         // topLevel lets us know if the patterns are on the top level or nested inside
         // a delimiter:
         //     case $topLevel (,) ... => { }
@@ -301,75 +270,59 @@
         // should match 1,2,3 and leave foo alone but:
         //     m (1,2,3 foo)
         // should fail to match entirely.
-        topLevel$2211 = topLevel$2211 || false;
+        topLevel$2018 = topLevel$2018 || false;
         // note that there are two environments floating around,
         // one is the mapping of identifiers to macro definitions (env)
         // and the other is the pattern environment (patternEnv) that maps
         // patterns in a macro case to syntax.
-        var result$2212 = [];
-        var patternEnv$2213 = {};
-        var match$2214;
-        var pattern$2215;
-        var rest$2216 = stx$2209;
-        var success$2217 = true;
-        var inLeading$2218;
+        var result$2019 = [];
+        var patternEnv$2020 = {};
+        var match$2021;
+        var pattern$2022;
+        var rest$2023 = stx$2016;
+        var success$2024 = true;
         patternLoop:
-            for (var i$2219 = 0; i$2219 < patterns$2208.length; i$2219++) {
-                if (success$2217 === false) {
+            for (var i$2025 = 0; i$2025 < patterns$2015.length; i$2025++) {
+                if (success$2024 === false) {
                     break;
                 }
-                pattern$2215 = patterns$2208[i$2219];
-                inLeading$2218 = false;
+                pattern$2022 = patterns$2015[i$2025];
                 do {
                     // handles cases where patterns trail a repeated pattern like `$x ... ;`
-                    if (pattern$2215.repeat && i$2219 + 1 < patterns$2208.length) {
-                        var restMatch$2220 = matchPatterns$2150(patterns$2208.slice(i$2219 + 1), rest$2216, env$2210, topLevel$2211);
-                        if (restMatch$2220.success) {
+                    if (pattern$2022.repeat && i$2025 + 1 < patterns$2015.length) {
+                        var restMatch$2026 = matchPatterns$1969(patterns$2015.slice(i$2025 + 1), rest$2023, env$2017, topLevel$2018);
+                        if (restMatch$2026.success) {
                             // match the repeat pattern on the empty array to fill in its
                             // pattern variable in the environment 
-                            match$2214 = matchPattern$2151(pattern$2215, [], env$2210, patternEnv$2213);
-                            patternEnv$2213 = _$2124.extend(restMatch$2220.patternEnv, match$2214.patternEnv);
-                            rest$2216 = restMatch$2220.rest;
+                            match$2021 = matchPattern$1970(pattern$2022, [], env$2017, patternEnv$2020);
+                            patternEnv$2020 = _$1946.extend(restMatch$2026.patternEnv, match$2021.patternEnv);
+                            rest$2023 = restMatch$2026.rest;
                             break patternLoop;
                         }
                     }
-                    if (pattern$2215.repeat && pattern$2215.leading && pattern$2215.separator !== ' ') {
-                        if (rest$2216[0].token.value === pattern$2215.separator) {
-                            if (!inLeading$2218) {
-                                inLeading$2218 = true;
-                            }
-                            rest$2216 = rest$2216.slice(1);
-                        } else {
-                            // If we are in a leading repeat, the separator is required.
-                            if (inLeading$2218) {
-                                success$2217 = false;
-                                break;
-                            }
-                        }
-                    }
-                    match$2214 = matchPattern$2151(pattern$2215, rest$2216, env$2210, patternEnv$2213);
-                    if (!match$2214.success && pattern$2215.repeat) {
+                    match$2021 = matchPattern$1970(pattern$2022, rest$2023, env$2017, patternEnv$2020);
+                    if (!match$2021.success && pattern$2022.repeat) {
                         // a repeat can match zero tokens and still be a
                         // "success" so break out of the inner loop and
                         // try the next pattern
                         break;
                     }
-                    if (!match$2214.success) {
-                        success$2217 = false;
+                    if (!match$2021.success) {
+                        success$2024 = false;
                         break;
                     }
-                    rest$2216 = match$2214.rest;
-                    patternEnv$2213 = match$2214.patternEnv;
-                    if (success$2217 && !(topLevel$2211 || pattern$2215.repeat)) {
+                    rest$2023 = match$2021.rest;
+                    patternEnv$2020 = match$2021.patternEnv;
+                    if (success$2024 && !(topLevel$2018 || pattern$2022.repeat)) {
                         // the very last pattern matched, inside a
                         // delimiter, not a repeat, *and* there are more
                         // unmatched bits of syntax
-                        if (i$2219 == patterns$2208.length - 1 && rest$2216.length !== 0) {
-                            success$2217 = false;
+                        if (i$2025 == patterns$2015.length - 1 && rest$2023.length !== 0) {
+                            success$2024 = false;
                             break;
                         }
                     }
-                    if (pattern$2215.repeat && !pattern$2215.leading && success$2217) {
+                    if (pattern$2022.repeat && success$2024) {
                         // if (i < patterns.length - 1 && rest.length > 0) {
                         //     var restMatch = matchPatterns(patterns.slice(i+1), rest, env, topLevel);
                         //     if (restMatch.success) {
@@ -378,37 +331,30 @@
                         //         break patternLoop;
                         //     }
                         // }
-                        if (pattern$2215.separator === ' ') {
+                        if (pattern$2022.separator === ' ') {
                             // no separator specified (using the empty string for this)
                             // so keep going
                             continue;
-                        } else if (rest$2216[0] && rest$2216[0].token.value === pattern$2215.separator) {
+                        } else if (rest$2023[0] && rest$2023[0].token.value === pattern$2022.separator) {
                             // more tokens and the next token matches the separator
-                            rest$2216 = rest$2216.slice(1);
-                        } else if (pattern$2215.separator !== ' ' && rest$2216.length > 0 && i$2219 === patterns$2208.length - 1 && topLevel$2211 === false) {
+                            rest$2023 = rest$2023.slice(1);
+                        } else if (pattern$2022.separator !== ' ' && rest$2023.length > 0 && i$2025 === patterns$2015.length - 1 && topLevel$2018 === false) {
                             // separator is specified, there is a next token, the
                             // next token doesn't match the separator, there are
                             // no more patterns, and this is a top level pattern
                             // so the match has failed
-                            success$2217 = false;
+                            success$2024 = false;
                             break;
                         } else {
                             break;
                         }
                     }
-                } while (pattern$2215.repeat && success$2217 && rest$2216.length > 0);
+                } while (pattern$2022.repeat && success$2024 && rest$2023.length > 0);
             }
-        var result$2212;
-        if (success$2217) {
-            result$2212 = rest$2216.length ? stx$2209.slice(0, -rest$2216.length) : stx$2209;
-        } else {
-            result$2212 = [];
-        }
         return {
-            success: success$2217,
-            result: result$2212,
-            rest: rest$2216,
-            patternEnv: patternEnv$2213
+            success: success$2024,
+            rest: rest$2023,
+            patternEnv: patternEnv$2020
         };
     }
     /* the pattern environment will look something like:
@@ -435,297 +381,240 @@
         "$y" : ...
     }
     */
-    function matchPattern$2151(pattern$2221, stx$2222, env$2223, patternEnv$2224) {
-        var subMatch$2225;
-        var match$2226, matchEnv$2227;
-        var rest$2228;
-        var success$2229;
-        if (typeof pattern$2221.inner !== 'undefined') {
-            if (pattern$2221.class === 'pattern_group') {
+    function matchPattern$1970(pattern$2027, stx$2028, env$2029, patternEnv$2030) {
+        var subMatch$2031;
+        var match$2032, matchEnv$2033;
+        var rest$2034;
+        var success$2035;
+        if (typeof pattern$2027.inner !== 'undefined') {
+            if (pattern$2027.class === 'pattern_group') {
                 // pattern groups don't match the delimiters
-                subMatch$2225 = matchPatterns$2150(pattern$2221.inner, stx$2222, env$2223, true);
-                rest$2228 = subMatch$2225.rest;
-            } else if (stx$2222[0] && stx$2222[0].token.type === parser$2126.Token.Delimiter && stx$2222[0].token.value === pattern$2221.value) {
-                stx$2222[0].expose();
-                if (pattern$2221.inner.length === 0 && stx$2222[0].token.inner.length !== 0) {
+                subMatch$2031 = matchPatterns$1969(pattern$2027.inner, stx$2028, env$2029, true);
+                rest$2034 = subMatch$2031.rest;
+            } else if (stx$2028[0] && stx$2028[0].token.type === parser$1948.Token.Delimiter && stx$2028[0].token.value === pattern$2027.value) {
+                stx$2028[0].expose();
+                if (pattern$2027.inner.length === 0 && stx$2028[0].token.inner.length !== 0) {
                     return {
                         success: false,
-                        rest: stx$2222,
-                        patternEnv: patternEnv$2224
+                        rest: stx$2028,
+                        patternEnv: patternEnv$2030
                     };
                 }
-                subMatch$2225 = matchPatterns$2150(pattern$2221.inner, stx$2222[0].token.inner, env$2223, false);
-                rest$2228 = stx$2222.slice(1);
+                subMatch$2031 = matchPatterns$1969(pattern$2027.inner, stx$2028[0].token.inner, env$2029, false);
+                rest$2034 = stx$2028.slice(1);
             } else {
                 return {
                     success: false,
-                    rest: stx$2222,
-                    patternEnv: patternEnv$2224
+                    rest: stx$2028,
+                    patternEnv: patternEnv$2030
                 };
             }
-            success$2229 = subMatch$2225.success;
+            success$2035 = subMatch$2031.success;
             // merge the subpattern matches with the current pattern environment
-            _$2124.keys(subMatch$2225.patternEnv).forEach(function (patternKey$2230) {
-                if (pattern$2221.repeat) {
+            _$1946.keys(subMatch$2031.patternEnv).forEach(function (patternKey$2036) {
+                if (pattern$2027.repeat) {
                     // if this is a repeat pattern we need to bump the level
-                    var nextLevel$2231 = subMatch$2225.patternEnv[patternKey$2230].level + 1;
-                    if (patternEnv$2224[patternKey$2230]) {
-                        patternEnv$2224[patternKey$2230].level = nextLevel$2231;
-                        patternEnv$2224[patternKey$2230].match.push(subMatch$2225.patternEnv[patternKey$2230]);
+                    var nextLevel$2037 = subMatch$2031.patternEnv[patternKey$2036].level + 1;
+                    if (patternEnv$2030[patternKey$2036]) {
+                        patternEnv$2030[patternKey$2036].level = nextLevel$2037;
+                        patternEnv$2030[patternKey$2036].match.push(subMatch$2031.patternEnv[patternKey$2036]);
                     } else {
                         // initialize if we haven't done so already
-                        patternEnv$2224[patternKey$2230] = {
-                            level: nextLevel$2231,
-                            match: [subMatch$2225.patternEnv[patternKey$2230]]
+                        patternEnv$2030[patternKey$2036] = {
+                            level: nextLevel$2037,
+                            match: [subMatch$2031.patternEnv[patternKey$2036]]
                         };
                     }
                 } else {
                     // otherwise accept the environment as-is
-                    patternEnv$2224[patternKey$2230] = subMatch$2225.patternEnv[patternKey$2230];
+                    patternEnv$2030[patternKey$2036] = subMatch$2031.patternEnv[patternKey$2036];
                 }
             });
         } else {
-            if (pattern$2221.class === 'pattern_literal') {
+            if (pattern$2027.class === 'pattern_literal') {
                 // wildcard
-                if (stx$2222[0] && pattern$2221.value === '_') {
-                    success$2229 = true;
-                    rest$2228 = stx$2222.slice(1);
+                if (stx$2028[0] && pattern$2027.value === '_') {
+                    success$2035 = true;
+                    rest$2034 = stx$2028.slice(1);
                 }    // match the literal but don't update the pattern environment
-                else if (stx$2222[0] && pattern$2221.value === stx$2222[0].token.value) {
-                    success$2229 = true;
-                    rest$2228 = stx$2222.slice(1);
+                else if (stx$2028[0] && pattern$2027.value === stx$2028[0].token.value) {
+                    success$2035 = true;
+                    rest$2034 = stx$2028.slice(1);
                 } else {
-                    success$2229 = false;
-                    rest$2228 = stx$2222;
+                    success$2035 = false;
+                    rest$2034 = stx$2028;
                 }
             } else {
-                match$2226 = matchPatternClass$2149(pattern$2221.class, stx$2222, env$2223);
-                success$2229 = match$2226.result !== null;
-                rest$2228 = match$2226.rest;
-                matchEnv$2227 = {
+                match$2032 = matchPatternClass$1968(pattern$2027.class, stx$2028, env$2029);
+                success$2035 = match$2032.result !== null;
+                rest$2034 = match$2032.rest;
+                matchEnv$2033 = {
                     level: 0,
-                    match: match$2226.result
+                    match: match$2032.result
                 };
                 // push the match onto this value's slot in the environment
-                if (pattern$2221.repeat) {
-                    if (patternEnv$2224[pattern$2221.value] && success$2229) {
-                        patternEnv$2224[pattern$2221.value].match.push(matchEnv$2227);
-                    } else if (patternEnv$2224[pattern$2221.value] === undefined) {
+                if (pattern$2027.repeat) {
+                    if (patternEnv$2030[pattern$2027.value] && success$2035) {
+                        patternEnv$2030[pattern$2027.value].match.push(matchEnv$2033);
+                    } else if (patternEnv$2030[pattern$2027.value] == undefined) {
                         // initialize if necessary
-                        patternEnv$2224[pattern$2221.value] = {
+                        patternEnv$2030[pattern$2027.value] = {
                             level: 1,
-                            match: [matchEnv$2227]
+                            match: [matchEnv$2033]
                         };
                     }
                 } else {
-                    patternEnv$2224[pattern$2221.value] = matchEnv$2227;
+                    patternEnv$2030[pattern$2027.value] = matchEnv$2033;
                 }
             }
         }
         return {
-            success: success$2229,
-            rest: rest$2228,
-            patternEnv: patternEnv$2224
+            success: success$2035,
+            rest: rest$2034,
+            patternEnv: patternEnv$2030
         };
     }
-    function matchLookbehind$2152(patterns$2232, stx$2233, terms$2234, env$2235) {
-        var success$2236, patternEnv$2237, prevStx$2238, prevTerms$2239;
-        // No lookbehind, noop.
-        if (!patterns$2232.length) {
-            success$2236 = true;
-            patternEnv$2237 = {};
-            prevStx$2238 = stx$2233;
-            prevTerms$2239 = terms$2234;
-        } else {
-            var match$2240 = matchPatterns$2150(patterns$2232, stx$2233, env$2235, true);
-            var last$2241 = match$2240.result[match$2240.result.length - 1];
-            success$2236 = match$2240.success;
-            patternEnv$2237 = match$2240.patternEnv;
-            if (success$2236) {
-                if (match$2240.rest.length) {
-                    if (last$2241 && last$2241.term === match$2240.rest[0].term) {
-                        // The term tree was split, so its a failed match;
-                        success$2236 = false;
-                    } else {
-                        prevStx$2238 = match$2240.rest;
-                        // Find where to slice the prevTerms to match up with
-                        // the state of prevStx.
-                        for (var i$2242 = 0, len$2243 = terms$2234.length; i$2242 < len$2243; i$2242++) {
-                            if (terms$2234[i$2242] === prevStx$2238[0].term) {
-                                prevTerms$2239 = terms$2234.slice(i$2242);
-                                break;
-                            }
-                        }
-                    }
-                } else {
-                    prevTerms$2239 = [];
-                    prevStx$2238 = [];
-                }
-            }
+    function hasMatch$1971(m$2038) {
+        if (m$2038.level === 0) {
+            return m$2038.match.length > 0;
         }
-        // We need to reverse the matches for any top level repeaters because
-        // they match in reverse, and thus put their results in backwards.
-        _$2124.forEach(patternEnv$2237, function (val$2244, key$2245) {
-            if (val$2244.level && val$2244.match) {
-                val$2244.match.reverse();
-            }
-        });
-        return {
-            success: success$2236,
-            patternEnv: patternEnv$2237,
-            prevStx: prevStx$2238,
-            prevTerms: prevTerms$2239
-        };
-    }
-    function hasMatch$2153(m$2246) {
-        if (m$2246.level === 0) {
-            return m$2246.match.length > 0;
-        }
-        return m$2246.match.every(function (m$2247) {
-            return hasMatch$2153(m$2247);
+        return m$2038.match.every(function (m$2039) {
+            return hasMatch$1971(m$2039);
         });
     }
     // given the given the macroBody (list of Pattern syntax objects) and the
     // environment (a mapping of patterns to syntax) return the body with the
     // appropriate patterns replaces with their value in the environment
-    function transcribe$2154(macroBody$2248, macroNameStx$2249, env$2250) {
-        return _$2124.chain(macroBody$2248).reduce(function (acc$2251, bodyStx$2252, idx$2253, original$2254) {
+    function transcribe$1972(macroBody$2040, macroNameStx$2041, env$2042) {
+        return _$1946.chain(macroBody$2040).reduce(function (acc$2043, bodyStx$2044, idx$2045, original$2046) {
             // first find the ellipses and mark the syntax objects
             // (note that this step does not eagerly go into delimiter bodies)
-            var last$2255 = original$2254[idx$2253 - 1];
-            var next$2256 = original$2254[idx$2253 + 1];
-            var nextNext$2257 = original$2254[idx$2253 + 2];
+            var last$2047 = original$2046[idx$2045 - 1];
+            var next$2048 = original$2046[idx$2045 + 1];
+            var nextNext$2049 = original$2046[idx$2045 + 2];
             // drop `...`
-            if (bodyStx$2252.token.value === '...') {
-                return acc$2251;
+            if (bodyStx$2044.token.value === '...') {
+                return acc$2043;
             }
             // drop `(<separator)` when followed by an ellipse
-            if (delimIsSeparator$2140(bodyStx$2252) && next$2256 && next$2256.token.value === '...') {
-                return acc$2251;
+            if (delimIsSeparator$1961(bodyStx$2044) && next$2048 && next$2048.token.value === '...') {
+                return acc$2043;
             }
             // skip the $ in $(...)
-            if (bodyStx$2252.token.value === '$' && next$2256 && next$2256.token.type === parser$2126.Token.Delimiter && next$2256.token.value === '()') {
-                return acc$2251;
+            if (bodyStx$2044.token.value === '$' && next$2048 && next$2048.token.type === parser$1948.Token.Delimiter && next$2048.token.value === '()') {
+                return acc$2043;
             }
             // mark $[...] as a literal
-            if (bodyStx$2252.token.value === '$' && next$2256 && next$2256.token.type === parser$2126.Token.Delimiter && next$2256.token.value === '[]') {
-                next$2256.literal = true;
-                return acc$2251;
+            if (bodyStx$2044.token.value === '$' && next$2048 && next$2048.token.type === parser$1948.Token.Delimiter && next$2048.token.value === '[]') {
+                next$2048.literal = true;
+                return acc$2043;
             }
-            if (bodyStx$2252.token.type === parser$2126.Token.Delimiter && bodyStx$2252.token.value === '()' && last$2255 && last$2255.token.value === '$') {
-                bodyStx$2252.group = true;
+            if (bodyStx$2044.token.type === parser$1948.Token.Delimiter && bodyStx$2044.token.value === '()' && last$2047 && last$2047.token.value === '$') {
+                bodyStx$2044.group = true;
             }
             // literal [] delimiters have their bodies just
             // directly passed along
-            if (bodyStx$2252.literal === true) {
-                assert$2134(bodyStx$2252.token.type === parser$2126.Token.Delimiter, 'expecting a literal to be surrounded by []');
-                return acc$2251.concat(bodyStx$2252.token.inner);
+            if (bodyStx$2044.literal === true) {
+                assert$1956(bodyStx$2044.token.type === parser$1948.Token.Delimiter, 'expecting a literal to be surrounded by []');
+                return acc$2043.concat(bodyStx$2044.token.inner);
             }
-            if (next$2256 && next$2256.token.value === '...') {
-                bodyStx$2252.repeat = true;
-                bodyStx$2252.separator = ' ';
+            if (next$2048 && next$2048.token.value === '...') {
+                bodyStx$2044.repeat = true;
+                bodyStx$2044.separator = ' ';
             }    // default to space separated
-            else if (delimIsSeparator$2140(next$2256) && nextNext$2257 && nextNext$2257.token.value === '...') {
-                bodyStx$2252.repeat = true;
-                bodyStx$2252.separator = next$2256.token.inner[0].token.value;
+            else if (delimIsSeparator$1961(next$2048) && nextNext$2049 && nextNext$2049.token.value === '...') {
+                bodyStx$2044.repeat = true;
+                bodyStx$2044.separator = next$2048.token.inner[0].token.value;
             }
-            acc$2251.push(bodyStx$2252);
-            return acc$2251;
-        }, []).reduce(function (acc$2258, bodyStx$2259, idx$2260) {
+            return acc$2043.concat(bodyStx$2044);
+        }, []).reduce(function (acc$2050, bodyStx$2051, idx$2052) {
             // then do the actual transcription
-            if (bodyStx$2259.repeat) {
-                if (bodyStx$2259.token.type === parser$2126.Token.Delimiter) {
-                    bodyStx$2259.expose();
-                    var fv$2261 = _$2124.filter(freeVarsInPattern$2137(bodyStx$2259.token.inner), function (pat$2268) {
+            if (bodyStx$2051.repeat) {
+                if (bodyStx$2051.token.type === parser$1948.Token.Delimiter) {
+                    bodyStx$2051.expose();
+                    var fv$2053 = _$1946.filter(freeVarsInPattern$1958(bodyStx$2051.token.inner), function (pat$2060) {
                             // ignore "patterns"
                             // that aren't in the
                             // environment (treat
                             // them like literals)
-                            return env$2250.hasOwnProperty(pat$2268);
+                            return env$2042.hasOwnProperty(pat$2060);
                         });
-                    var restrictedEnv$2262 = [];
-                    var nonScalar$2263 = _$2124.find(fv$2261, function (pat$2269) {
-                            return env$2250[pat$2269].level > 0;
+                    var restrictedEnv$2054 = [];
+                    var nonScalar$2055 = _$1946.find(fv$2053, function (pat$2061) {
+                            return env$2042[pat$2061].level > 0;
                         });
-                    assert$2134(typeof nonScalar$2263 !== 'undefined', 'must have a least one non-scalar in repeat');
-                    var repeatLength$2264 = env$2250[nonScalar$2263].match.length;
-                    var sameLength$2265 = _$2124.all(fv$2261, function (pat$2270) {
-                            return env$2250[pat$2270].level === 0 || env$2250[pat$2270].match.length === repeatLength$2264;
+                    assert$1956(typeof nonScalar$2055 !== 'undefined', 'must have a least one non-scalar in repeat');
+                    var repeatLength$2056 = env$2042[nonScalar$2055].match.length;
+                    var sameLength$2057 = _$1946.all(fv$2053, function (pat$2062) {
+                            return env$2042[pat$2062].level === 0 || env$2042[pat$2062].match.length === repeatLength$2056;
                         });
-                    assert$2134(sameLength$2265, 'all non-scalars must have the same length');
+                    assert$1956(sameLength$2057, 'all non-scalars must have the same length');
                     // create a list of envs restricted to the free vars
-                    _$2124.each(_$2124.range(repeatLength$2264), function (idx$2271) {
-                        var renv$2272 = {};
-                        _$2124.each(fv$2261, function (pat$2274) {
-                            if (env$2250[pat$2274].level === 0) {
+                    _$1946.each(_$1946.range(repeatLength$2056), function (idx$2063) {
+                        var renv$2064 = {};
+                        _$1946.each(fv$2053, function (pat$2066) {
+                            if (env$2042[pat$2066].level === 0) {
                                 // copy scalars over
-                                renv$2272[pat$2274] = env$2250[pat$2274];
+                                renv$2064[pat$2066] = env$2042[pat$2066];
                             } else {
                                 // grab the match at this index 
-                                renv$2272[pat$2274] = env$2250[pat$2274].match[idx$2271];
+                                renv$2064[pat$2066] = env$2042[pat$2066].match[idx$2063];
                             }
                         });
-                        var allHaveMatch$2273 = Object.keys(renv$2272).every(function (pat$2275) {
-                                return hasMatch$2153(renv$2272[pat$2275]);
+                        var allHaveMatch$2065 = Object.keys(renv$2064).every(function (pat$2067) {
+                                return hasMatch$1971(renv$2064[pat$2067]);
                             });
-                        if (allHaveMatch$2273) {
-                            restrictedEnv$2262.push(renv$2272);
+                        if (allHaveMatch$2065) {
+                            restrictedEnv$2054.push(renv$2064);
                         }
                     });
-                    var transcribed$2266 = _$2124.map(restrictedEnv$2262, function (renv$2276) {
-                            if (bodyStx$2259.group) {
-                                return transcribe$2154(bodyStx$2259.token.inner, macroNameStx$2249, renv$2276);
+                    var transcribed$2058 = _$1946.map(restrictedEnv$2054, function (renv$2068) {
+                            if (bodyStx$2051.group) {
+                                return transcribe$1972(bodyStx$2051.token.inner, macroNameStx$2041, renv$2068);
                             } else {
-                                var newBody$2277 = syntaxFromToken$2130(_$2124.clone(bodyStx$2259.token), bodyStx$2259);
-                                newBody$2277.token.inner = transcribe$2154(bodyStx$2259.token.inner, macroNameStx$2249, renv$2276);
-                                return newBody$2277;
+                                var newBody$2069 = syntaxFromToken$1952(_$1946.clone(bodyStx$2051.token), bodyStx$2051);
+                                newBody$2069.token.inner = transcribe$1972(bodyStx$2051.token.inner, macroNameStx$2041, renv$2068);
+                                return newBody$2069;
                             }
                         });
-                    var joined$2267;
-                    if (bodyStx$2259.group) {
-                        joined$2267 = joinSyntaxArr$2133(transcribed$2266, bodyStx$2259.separator);
+                    var joined$2059;
+                    if (bodyStx$2051.group) {
+                        joined$2059 = joinSyntaxArr$1955(transcribed$2058, bodyStx$2051.separator);
                     } else {
-                        joined$2267 = joinSyntax$2132(transcribed$2266, bodyStx$2259.separator);
+                        joined$2059 = joinSyntax$1954(transcribed$2058, bodyStx$2051.separator);
                     }
-                    push$2136.apply(acc$2258, joined$2267);
-                    return acc$2258;
+                    return acc$2050.concat(joined$2059);
                 }
-                if (!env$2250[bodyStx$2259.token.value]) {
-                    throwSyntaxError$2135('patterns', 'The pattern variable is not bound for the template', bodyStx$2259);
-                } else if (env$2250[bodyStx$2259.token.value].level !== 1) {
-                    throwSyntaxError$2135('patterns', 'Ellipses level does not match in the template', bodyStx$2259);
+                if (!env$2042[bodyStx$2051.token.value]) {
+                    throwSyntaxError$1957('patterns', 'The pattern variable is not bound for the template', bodyStx$2051);
+                } else if (env$2042[bodyStx$2051.token.value].level !== 1) {
+                    throwSyntaxError$1957('patterns', 'Ellipses level does not match in the template', bodyStx$2051);
                 }
-                push$2136.apply(acc$2258, joinRepeatedMatch$2142(env$2250[bodyStx$2259.token.value].match, bodyStx$2259.separator));
-                return acc$2258;
+                return acc$2050.concat(joinRepeatedMatch$1963(env$2042[bodyStx$2051.token.value].match, bodyStx$2051.separator));
             } else {
-                if (bodyStx$2259.token.type === parser$2126.Token.Delimiter) {
-                    bodyStx$2259.expose();
-                    var newBody$2278 = syntaxFromToken$2130(_$2124.clone(bodyStx$2259.token), macroBody$2248);
-                    newBody$2278.token.inner = transcribe$2154(bodyStx$2259.token.inner, macroNameStx$2249, env$2250);
-                    acc$2258.push(newBody$2278);
-                    return acc$2258;
+                if (bodyStx$2051.token.type === parser$1948.Token.Delimiter) {
+                    bodyStx$2051.expose();
+                    var newBody$2070 = syntaxFromToken$1952(_$1946.clone(bodyStx$2051.token), macroBody$2040);
+                    newBody$2070.token.inner = transcribe$1972(bodyStx$2051.token.inner, macroNameStx$2041, env$2042);
+                    return acc$2050.concat([newBody$2070]);
                 }
-                if (isPatternVar$2141(bodyStx$2259) && Object.prototype.hasOwnProperty.bind(env$2250)(bodyStx$2259.token.value)) {
-                    if (!env$2250[bodyStx$2259.token.value]) {
-                        throwSyntaxError$2135('patterns', 'The pattern variable is not bound for the template', bodyStx$2259);
-                    } else if (env$2250[bodyStx$2259.token.value].level !== 0) {
-                        throwSyntaxError$2135('patterns', 'Ellipses level does not match in the template', bodyStx$2259);
+                if (isPatternVar$1962(bodyStx$2051) && Object.prototype.hasOwnProperty.bind(env$2042)(bodyStx$2051.token.value)) {
+                    if (!env$2042[bodyStx$2051.token.value]) {
+                        throwSyntaxError$1957('patterns', 'The pattern variable is not bound for the template', bodyStx$2051);
+                    } else if (env$2042[bodyStx$2051.token.value].level !== 0) {
+                        throwSyntaxError$1957('patterns', 'Ellipses level does not match in the template', bodyStx$2051);
                     }
-                    push$2136.apply(acc$2258, takeLineContext$2143(bodyStx$2259, env$2250[bodyStx$2259.token.value].match));
-                    return acc$2258;
+                    return acc$2050.concat(takeLineContext$1964(bodyStx$2051, env$2042[bodyStx$2051.token.value].match));
                 }
-                acc$2258.push(bodyStx$2259);
-                return acc$2258;
+                return acc$2050.concat([bodyStx$2051]);
             }
         }, []).value();
     }
-    exports$2123.loadPattern = loadPattern$2147;
-    exports$2123.matchPatterns = matchPatterns$2150;
-    exports$2123.matchLookbehind = matchLookbehind$2152;
-    exports$2123.transcribe = transcribe$2154;
-    exports$2123.matchPatternClass = matchPatternClass$2149;
-    exports$2123.takeLineContext = takeLineContext$2143;
-    exports$2123.takeLine = takeLine$2144;
-    exports$2123.typeIsLiteral = typeIsLiteral$2138;
+    exports$1945.loadPattern = loadPattern$1967;
+    exports$1945.matchPatterns = matchPatterns$1969;
+    exports$1945.transcribe = transcribe$1972;
+    exports$1945.matchPatternClass = matchPatternClass$1968;
+    exports$1945.takeLineContext = takeLineContext$1964;
+    exports$1945.takeLine = takeLine$1965;
 }));
 //# sourceMappingURL=patterns.js.map

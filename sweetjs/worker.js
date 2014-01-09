@@ -19,8 +19,16 @@ require({ baseUrl: './' }, ["./sweet", "./syntax", "./underscore"], function(swe
         try {
             var output;
 
-            if(e.data.maxExpands) {
-                output = sweet.expand(e.data.src, '', e.data.maxExpands);
+            if(e.data.maxExpands != null) {
+                if(e.data.maxExpands === 0) {
+                    output = e.data.src;
+                }
+                else {
+                    output = syn.prettyPrint(
+                        sweet.expand(e.data.src, '', e.data.maxExpands),
+                        false
+                    );
+                }
             }
             else {
                 output = sweet.compile(e.data.src, {
