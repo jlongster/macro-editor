@@ -11,6 +11,10 @@ requirejs.config({
 });
 
 require({ baseUrl: './' }, ["./sweet", "./syntax", "./underscore"], function(sweet, syn, _) {
+    global.postMessage({
+        type: 'ready'
+    });
+
     global.onmessage = function(e) {
         if(e.data === '') {
             return;
@@ -24,6 +28,7 @@ require({ baseUrl: './' }, ["./sweet", "./syntax", "./underscore"], function(swe
         }
 
         global.postMessage({
+            type: 'result',
             editorId: e.data.editorId,
             requestId: e.data.requestId,
             src: output,

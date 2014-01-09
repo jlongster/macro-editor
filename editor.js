@@ -5,12 +5,18 @@ document.addEventListener('DOMContentLoaded', function() {
     var baseid = 1;
 
     worker.addEventListener('message', function(e) {
-        var id = e.data.editorId;
-        var reqId = e.data.requestId;
+        if(e.data.type === 'ready') {
+            // compile the first one immediately so it's already there
+            $('.macro-editor')[0].compile();
+        }
+        else {
+            var id = e.data.editorId;
+            var reqId = e.data.requestId;
 
-        if(receivers[id] && receivers[id].requestId === reqId) {
-            receivers[id].handler(e.data.err, e.data.src);
-            delete receivers[id];
+            if(receivers[id] && receivers[id].requestId === reqId) {
+                receivers[id].handler(e.data.err, e.data.src);
+                delete receivers[id];
+            }
         }
     });
 
@@ -43,6 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
     editors.each(function() {
         var width = this.getBoundingClientRect().width;
         var content = this.textContent;
+        var el = $(this);
         this.textContent = '';
 
         var inputMirror = CodeMirror(this, {
@@ -57,12 +64,22 @@ document.addEventListener('DOMContentLoaded', function() {
             readOnly: true
         });
 
-        var h = $(this).find('.CodeMirror').height();
+        var h = el.find('.CodeMirror').height();
         inputMirror.setSize(width / 2, h);
         outputMirror.setSize(width / 2, h);
 
         var status = $('<div class="status"></div>');
-        $(this).append(status);
+        el.append(status);
+        el.append(
+            '<div class="controls">' +
+            '  <button class="step">Step</button>' +
+            '  <button class="reset">Reset</button>' +
+            '</div>'
+        );
+
+        el.find('button.reset').on('click', function() {
+            inputMirror.setValue(content);
+        });
 
         inputMirror.on('change', function() {
             this.compile();
@@ -78,41 +95,100 @@ document.addEventListener('DOMContentLoaded', function() {
             inputMirror.focus();
         };
 
+        this.setValue = function(val) {
+            inputMirror.setValue(val);
+        };
+
         this.uid = baseid++;
     });
 
-    // This is the wonky part. If I do this immediately the worker
-    // just doesn't respond, but if I wait a little bit it responds
-    // fine.
-    // setTimeout(function() {
-    //     editors[0].compile();
-    // }, 1000);
+    $('a[data-editor-change]').each(function() {
+        // find the first editor above this link. zepto doesn't have
+        // prevAll, which is stupid
+        var node = $(this).parents('p');
+        while(node.length && !node.is('.macro-editor')) {
+            node = node.prev();
+        }
+        var editor = node[0];
 
-    // Since a scroll event is initially triggered if you bind to it
-    // immediately, wait a little bit as well. We won't have to do
-    // this once we fix the web workers situation.
-    setTimeout(function() {
-        $(window).on('scroll', function(e) {
-            var win = {
-                width: (window.innerWidth ||
-                        document.documentElement.clientWidth),
-                height: (window.innerHeight ||
-                         document.documentElement.clientHeight)
-            };
-
-            editors.each(function() {
-                var rect = this.getBoundingClientRect();
-
-                if(rect.top + rect.height > 0 && rect.top < win.height) {
-                    if(!this.hasCompiled) {
-                        this.compile();
-                    }
-
-                    if(!this.hasFocused) {
-                        this.focus();
-                    }
-                }
+        if(editor) {
+            $(this).on('click', function(e) {
+                e.preventDefault();
+                editor.setValue(getChange(this.dataset.editorChange));
             });
-        }.bind(this));
-    }.bind(this), 1000);
+        }
+        else {
+            var err = Error('WARNING: could not find editor: ' + this);
+            err.link = this;
+            throw err;
+        }
+    });
+
+    // all the editors are compiled lazily, when the user scrolls an
+    // editor into view. it also focuses the editor in the view to
+    // emphasize that it's editable text
+    $(window).on('scroll', function(e) {
+        var win = {
+            width: (window.innerWidth ||
+                    document.documentElement.clientWidth),
+            height: (window.innerHeight ||
+                     document.documentElement.clientHeight)
+        };
+
+        editors.each(function() {
+            var rect = this.getBoundingClientRect();
+
+            if(rect.top + rect.height > 0 && rect.top < win.height) {
+                if(!this.hasCompiled) {
+                    this.compile();
+                }
+
+                if(!this.hasFocused) {
+                    this.focus();
+                }
+            }
+        });
+    }.bind(this));
+
+    // changes
+
+    function getChange(id) {
+        if(!CHANGES[id]) {
+            throw new Error('changeset not found: ' + id);
+        }
+        return CHANGES[id];
+    }
+
+    var CHANGES = {
+        // first example
+        1: 'macro foo {\n' +
+            '  rule { x } => { $x + \'rule1\' }\n' +
+            '}\n\n' +
+            'foo 5;\n' +
+            'foo bar;',
+        2: 'macro foo {\n' +
+            '  rule { x } => { \'rule1\' }\n' +
+            '}\n\n' +
+            'foo x;',
+
+        // second example
+        3: 'macro foo {\n' +
+            '  rule { =*> $x } => { $x + \'rule1\' }\n' +
+            '  rule { [$x] } => { $x + \'rule2\' }\n' +
+            '  rule { $x } => { $x + \'rule3\' }\n' +
+            '}\n\n' +
+            'foo =*> baller;\n' +
+            'foo 6;\n' +
+            'foo [bar];',
+
+        4: 'macro foo {\n' +
+            '  rule { => $x } => { $x + \'rule1\' }\n' +
+            '  rule { $x } => { $x + \'rule3\' }\n' +
+            '  rule { [$x] } => { $x + \'rule2\' }\n' +
+            '}\n\n' +
+            'foo => 5;\n' +
+            'foo 6;\n' +
+            'foo [bar];'
+
+    };
 });

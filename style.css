@@ -16,7 +16,6 @@ div.CodeMirror:nth-of-type(2n).cm-s-ambiance {
 .macro-editor {
     position: relative;
     border-top: 1px solid #333333;
-    border-bottom: 1px solid #333333;
     width: 1000px;
     margin-left: -150px;
 }
@@ -31,16 +30,42 @@ div.CodeMirror:nth-of-type(2n).cm-s-ambiance {
     display: none;
     position: absolute;
     width: 100%;
-    bottom: 0;
     left: 0;
-    background-color: rgba(0, 0, 0, .5);
+    bottom: 0;
+    width: auto;
+    background: #333333;
     color: white;
     padding: .5em 1em;
     font-size: .75em;
+    z-index: 100;
 }
 
 .status.error {
     background-color: red;
+    width: 100%;
+    top: 100%;
+    bottom: auto;
+}
+
+.controls {
+    text-align: center;
+    background-color: #f9f9f9;
+    border: 1px solid #d9d9d9;
+}
+
+.controls button {
+    margin: .25em;
+    font-size: .9em;
+    border-top: 1px solid #d0d0d0;
+    border-left: 1px solid #d0d0d0;
+    border-bottom: 1px solid #a0a0a0;
+    border-right: 1px solid #a0a0a0;
+
+    width: 5em;
+}
+
+.controls button:nth-of-type(2n) {
+    margin-left: 0;
 }
 
 .CodeMirror {
