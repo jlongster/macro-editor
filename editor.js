@@ -20,14 +20,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    var compile = _.debounce(function(id, inst, out, status) {
+    var compile = _.debounce(function(id, inst, out, status, opts) {
+        opts = opts || {};
         status.removeClass('error').show().text('compiling...');
         var reqId = baseid++;
 
         worker.postMessage({ 
             editorId: id,
             requestId: reqId,
-            src: inst.getValue()
+            src: inst.getValue(),
+            maxExpands: opts.maxExpands
         });
 
         receivers[id] = {
@@ -77,6 +79,10 @@ document.addEventListener('DOMContentLoaded', function() {
             '</div>'
         );
 
+        el.find('button.step').on('click', function() {
+            this.compile({ maxExpands: 1 });
+        }.bind(this));
+
         el.find('button.reset').on('click', function() {
             inputMirror.setValue(content);
         });
@@ -85,9 +91,9 @@ document.addEventListener('DOMContentLoaded', function() {
             this.compile();
         }.bind(this));
 
-        this.compile = function() {
+        this.compile = function(opts) {
             this.hasCompiled = true;
-            compile(this.uid, inputMirror, outputMirror, status);
+            compile(this.uid, inputMirror, outputMirror, status, opts);
         }.bind(this);
 
         this.focus = function() {

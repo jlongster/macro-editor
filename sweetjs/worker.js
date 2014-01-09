@@ -16,12 +16,17 @@ require({ baseUrl: './' }, ["./sweet", "./syntax", "./underscore"], function(swe
     });
 
     global.onmessage = function(e) {
-        if(e.data === '') {
-            return;
-        }
-
         try {
-            var output = sweet.compile(e.data.src).code;
+            var output;
+
+            if(e.data.maxExpands) {
+                output = sweet.expand(e.data.src, '', e.data.maxExpands);
+            }
+            else {
+                output = sweet.compile(e.data.src, {
+                    sourceMap: false
+                }).code;
+            }
         }
         catch(e) {
             var error = e.toString();
