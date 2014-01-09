@@ -105,13 +105,28 @@ document.addEventListener('DOMContentLoaded', function() {
             inputMirror.setValue(val);
         };
 
+        this.setSize = function(w, h) {
+            inputMirror.setSize(w, h);
+            outputMirror.setSize(w, h);
+        };
+
+        this.focus = function() {
+            inputMirror.focus();
+        };
+
         this.uid = baseid++;
     });
 
     $('a[data-editor-change]').each(function() {
-        // find the first editor above this link. zepto doesn't have
-        // prevAll, which is stupid
-        var node = $(this).parents('p');
+        // find the first editor above this link. start by finding the
+        // first parent right under the article
+        var parent = $(this);
+        do {
+            parent = parent.parent();
+        } while(!parent.parent().is('article'));
+
+        // zepto doesn't have prevAll, which is stupid
+        var node = parent;
         while(node.length && !node.is('.macro-editor')) {
             node = node.prev();
         }
@@ -121,6 +136,10 @@ document.addEventListener('DOMContentLoaded', function() {
             $(this).on('click', function(e) {
                 e.preventDefault();
                 editor.setValue(getChange(this.dataset.editorChange));
+
+                if(this.dataset.editorBig) {
+                    editor.setSize(null, '15em');
+                }
             });
         }
         else {
@@ -153,7 +172,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // display sweet.js version
 
-    $('.sweet-version').text('commit b885ea1a83b057b89e37d63a94b9ca7fee8b1bb3 on Dec 14');
+    $('.sweet-version').text('commit c33199a80dafaf25ed0ae0ebab570298da0260f7 on Jan 8');
 
     // changes
 
@@ -175,6 +194,20 @@ document.addEventListener('DOMContentLoaded', function() {
             '  rule { x } => { \'rule1\' }\n' +
             '}\n\n' +
             'foo x;',
+
+        fun1: 'macro ^ {\n' +
+            '  rule { { $x } } => { wrapped($x) }\n' +
+            '}\n\n' +
+            '^{x};\n' +
+            'foo(x, y, ^{z})\n',
+
+        fun2: 'let var = macro {\n' +
+            '  rule { [$x, $y] = $arr } => {\n' +
+            '    var $x = $arr[0];\n' +
+            '    var $y = $arr[1];\n' +
+            '  }\n' +
+            '}\n\n' +
+            'var [foo, bar] = arr;\n',
 
         // second example
         3: 'macro foo {\n' +
@@ -219,6 +252,5 @@ document.addEventListener('DOMContentLoaded', function() {
             '}\n\n' +
             'tag "foo" [1, 2, 3];\n' +
             'tag "bar" arr;\n'
-
     };
 });
