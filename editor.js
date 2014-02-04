@@ -51,6 +51,13 @@ document.addEventListener('DOMContentLoaded', function() {
           if(maxExpanded) {
             // this is very leaky abstraction, but meh
             container.find('.title span').text('done!');
+            container.find('button.step')
+              .removeClass('working').addClass('disabled')
+              .text('Done!');
+          }
+          else if(opts.maxExpands) {
+            container.find('.title span').text('step ' + opts.maxExpands);
+            container.find('button.step').removeClass('working');
           }
         }
       }
@@ -149,11 +156,14 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }.bind(this));
 
-    var closeStepper = function(e) {
+    el.find('button.close-stepper').on('click', function(e) {
       var container = el.removeClass('stepping');
       stepMirror = null;
       var stepper = container.find('.stepper');
       stepper.find('.content').html('');
+      container.find('button.step')
+        .removeClass('working').removeClass('disabled')
+        .text('Step');
 
       stepper.on('transitionend', function() {
         if(!container.is('.stepping')) {
@@ -166,15 +176,13 @@ document.addEventListener('DOMContentLoaded', function() {
       if(el.is('#tutorial')) {
         $(document.body).removeClass('tutorial-stepping');
       }
-    }.bind(this);
-
-    el.find('button.close-stepper').on('click', closeStepper);
+    }.bind(this));
 
     el.find('button.step').on('click', function(e) {
       var container = $(e.target).parents('.macro-editor').addClass('stepping');
       var numEl = container.find('.title span');
+      el.find('button.step').addClass('working');
       if(numEl.text() !== 'done!') {
-        numEl.text('step ' + maxExpands);
         compile(this.uid, inputMirror, stepMirror, container, { maxExpands: maxExpands++ });
       }
     }.bind(this));
@@ -185,7 +193,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     inputMirror.on('change', function() {
-      closeStepper();
       var h = el.find('.CodeMirror.input').height();
       outputMirror.setSize(width / 2, h);
       this.compile();
