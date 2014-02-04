@@ -1,78 +1,73 @@
-var fs$2542 = require('fs');
-var path$2543 = require('path');
-var sweet$2544 = require('./sweet.js');
-var syn$2545 = require('./syntax.js');
-var argv$2546 = require('optimist').usage('Usage: sjs [options] path/to/file.js').alias('o', 'output').describe('o', 'Output file path').alias('m', 'module').describe('m', 'use a module file for loading macro definitions. Use ./ or ../ for relative path otherwise looks up in installed npm packages').alias('w', 'watch').describe('w', 'watch a file').boolean('watch').alias('t', 'tokens').describe('t', 'just emit the expanded tokens without parsing an AST').alias('p', 'no-parse').describe('p', 'print out the expanded result but do not run through the parser (or apply hygienic renamings)').boolean('no-parse').alias('s', 'stdin').describe('s', 'read from stdin').boolean('stdin').alias('c', 'sourcemap').describe('c', 'generate a sourcemap').boolean('sourcemap').alias('n', 'num-expands').describe('n', 'the maximum number of expands to perform').alias('h', 'step-hygiene').describe('h', 'display hygienic renames when stepping with "--num-expands"').argv;
+var fs$1838 = require('fs');
+var path$1839 = require('path');
+var sweet$1840 = require('./sweet.js');
+var syn$1841 = require('./syntax.js');
+var argv$1842 = require('optimist').usage('Usage: sjs [options] path/to/file.js').alias('o', 'output').describe('o', 'Output file path').alias('m', 'module').describe('m', 'use a module file for loading macro definitions. Use ./ or ../ for relative path otherwise looks up in installed npm packages').alias('w', 'watch').describe('w', 'watch a file').boolean('watch').alias('t', 'tokens').describe('t', 'just emit the expanded tokens without parsing an AST').alias('a', 'ast').describe('a', 'just emit the expanded AST').alias('p', 'no-parse').describe('p', 'print out the expanded result but do not run through the parser (or apply hygienic renamings)').boolean('no-parse').alias('s', 'stdin').describe('s', 'read from stdin').boolean('stdin').alias('c', 'sourcemap').describe('c', 'generate a sourcemap').boolean('sourcemap').alias('n', 'num-expands').describe('n', 'the maximum number of expands to perform').alias('h', 'step-hygiene').describe('h', 'display hygienic renames when stepping with "--num-expands"').alias('r', 'readable-names').describe('r', 'remove as many hygienic renames as possible (ES5 code only!)').boolean('readable-names').describe('format-indent', 'number of spaces for indentation').argv;
 exports.run = function () {
-    var infile$2547 = argv$2546._[0];
-    var outfile$2548 = argv$2546.output;
-    var watch$2549 = argv$2546.watch;
-    var tokens$2550 = argv$2546.tokens;
-    var sourcemap$2551 = argv$2546.sourcemap;
-    var noparse$2552 = argv$2546['no-parse'];
-    var numexpands$2553 = argv$2546['num-expands'];
-    var displayHygiene$2554 = argv$2546['step-hygiene'];
-    var file$2555;
-    var globalMacros$2556;
-    if (infile$2547) {
-        file$2555 = fs$2542.readFileSync(infile$2547, 'utf8');
-    } else if (argv$2546.stdin) {
-        file$2555 = fs$2542.readFileSync('/dev/stdin', 'utf8');
-    } else if (argv$2546._.length === 0) {
+    var infile$1843 = argv$1842._[0];
+    var outfile$1844 = argv$1842.output;
+    var watch$1845 = argv$1842.watch;
+    var tokens$1846 = argv$1842.tokens;
+    var ast$1847 = argv$1842.ast;
+    var sourcemap$1848 = argv$1842.sourcemap;
+    var noparse$1849 = argv$1842['no-parse'];
+    var numexpands$1850 = argv$1842['num-expands'];
+    var displayHygiene$1851 = argv$1842['step-hygiene'];
+    var readableNames$1852 = argv$1842['readable-names'];
+    var formatIndent$1853 = parseInt(argv$1842['format-indent'], 10);
+    if (formatIndent$1853 !== formatIndent$1853) {
+        formatIndent$1853 = 4;
+    }
+    var file$1854;
+    if (infile$1843) {
+        file$1854 = fs$1838.readFileSync(infile$1843, 'utf8');
+    } else if (argv$1842.stdin) {
+        file$1854 = fs$1838.readFileSync('/dev/stdin', 'utf8');
+    } else if (argv$1842._.length === 0) {
         console.log(require('optimist').help());
         return;
     }
-    var mod$2557 = argv$2546.module;
-    var cwd$2558 = process.cwd();
-    var Module$2559 = module.constructor;
-    var modulemock$2560;
-    if (mod$2557) {
-        modulemock$2560 = {
-            id: cwd$2558 + '/$sweet-loader.js',
-            filename: '$sweet-loader.js',
-            paths: /^\.\/|\.\./.test(cwd$2558) ? [cwd$2558] : Module$2559._nodeModulePaths(cwd$2558)
+    var cwd$1855 = process.cwd();
+    var modules$1856 = typeof argv$1842.module === 'string' ? [argv$1842.module] : argv$1842.module;
+    modules$1856 = (modules$1856 || []).map(function (path$1858) {
+        return sweet$1840.loadNodeModule(cwd$1855, path$1858);
+    });
+    var options$1857 = {
+            filename: infile$1843,
+            modules: modules$1856,
+            ast: ast$1847,
+            readableNames: readableNames$1852,
+            escodegen: { format: { indent: { style: Array(formatIndent$1853 + 1).join(' ') } } }
         };
-        if (typeof mod$2557 === 'string') {
-            mod$2557 = [mod$2557];
-        }
-        globalMacros$2556 = mod$2557.reduceRight(function (f$2561, m$2562) {
-            var modulepath$2563 = Module$2559._resolveFilename(m$2562, modulemock$2560);
-            var modulefile$2564 = fs$2542.readFileSync(modulepath$2563, 'utf8');
-            return modulefile$2564 + '\n' + f$2561;
-        }, '');
-    }
-    if (watch$2549 && outfile$2548) {
-        fs$2542.watch(infile$2547, function () {
-            file$2555 = fs$2542.readFileSync(infile$2547, 'utf8');
+    if (watch$1845 && outfile$1844) {
+        fs$1838.watch(infile$1843, function () {
+            file$1854 = fs$1838.readFileSync(infile$1843, 'utf8');
             try {
-                fs$2542.writeFileSync(outfile$2548, sweet$2544.compile(file$2555, { macros: globalMacros$2556 }).code, 'utf8');
-            } catch (e$2565) {
-                console.log(e$2565);
+                fs$1838.writeFileSync(outfile$1844, sweet$1840.compile(file$1854, options$1857).code, 'utf8');
+            } catch (e$1859) {
+                console.log(e$1859);
             }
         });
-    } else if (outfile$2548) {
-        if (sourcemap$2551) {
-            var result$2566 = sweet$2544.compile(file$2555, {
-                    sourceMap: true,
-                    filename: infile$2547,
-                    macros: globalMacros$2556
-                });
-            var mapfile$2567 = path$2543.basename(outfile$2548) + '.map';
-            fs$2542.writeFileSync(outfile$2548, result$2566.code + '\n//# sourceMappingURL=' + mapfile$2567, 'utf8');
-            fs$2542.writeFileSync(outfile$2548 + '.map', result$2566.sourceMap, 'utf8');
+    } else if (outfile$1844) {
+        if (sourcemap$1848) {
+            options$1857.sourceMap = true;
+            var result$1860 = sweet$1840.compile(file$1854, options$1857);
+            var mapfile$1861 = path$1839.basename(outfile$1844) + '.map';
+            fs$1838.writeFileSync(outfile$1844, result$1860.code + '\n//# sourceMappingURL=' + mapfile$1861, 'utf8');
+            fs$1838.writeFileSync(outfile$1844 + '.map', result$1860.sourceMap, 'utf8');
         } else {
-            fs$2542.writeFileSync(outfile$2548, sweet$2544.compile(file$2555).code, 'utf8');
+            fs$1838.writeFileSync(outfile$1844, sweet$1840.compile(file$1854, options$1857).code, 'utf8');
         }
-    } else if (tokens$2550) {
-        console.log(sweet$2544.expand(file$2555, globalMacros$2556, numexpands$2553));
-    } else if (noparse$2552) {
-        var unparsedString$2568 = syn$2545.prettyPrint(sweet$2544.expand(file$2555, globalMacros$2556, numexpands$2553), displayHygiene$2554);
-        console.log(unparsedString$2568);
+    } else if (tokens$1846) {
+        console.log(sweet$1840.expand(file$1854, modules$1856, numexpands$1850));
+    } else if (ast$1847) {
+        console.log(JSON.stringify(sweet$1840.compile(file$1854, options$1857), null, formatIndent$1853));
+    } else if (noparse$1849) {
+        var unparsedString$1862 = syn$1841.prettyPrint(sweet$1840.expand(file$1854, modules$1856, numexpands$1850), displayHygiene$1851);
+        console.log(unparsedString$1862);
     } else {
-        console.log(sweet$2544.compile(file$2555, {
-            macros: globalMacros$2556,
-            numExpands: numexpands$2553
-        }).code);
+        options$1857.numExpands = numexpands$1850;
+        console.log(sweet$1840.compile(file$1854, options$1857).code);
     }
 };
 //# sourceMappingURL=sjs.js.map

@@ -1,35 +1,83 @@
 
-div.CodeMirror {
-    padding: 1em;
-    float: left;
-    border-right: 1px solid #d0d0d0;
+.intro-images, .stepping-images {
+    position: relative;
+    height: 30px;
 }
 
-div.CodeMirror.cm-s-ambiance {
-    box-shadow: none;
+.intro-images img, .stepping-images img {
+    position: absolute;
+    z-index: 300;
 }
 
-div.CodeMirror:nth-of-type(2n) {
-    float: right;
-    border-left: 1px solid #d0d0d0;
-    border-right: 0;
+.post .stepping-images img {
+    display: none;
 }
 
-div.CodeMirror:nth-of-type(2n).cm-s-ambiance {
+.intro-images img.edit-text-here {
+    top: 0;
+    left: -75px;
+}
+
+.intro-images img.output-shown-here {
+    top: 0;
+    right: -75px;
+}
+
+.intro-images img.step-through-expand {
+    top: -65px;
+    right: 125px;
+}
+
+.stepping-images .number-expansions {
+    top: -70px;
+    right: 175px;
+}
+
+.stepping-images .run-next {
+    top: -95px;
+    left: 240px;
+}
+
+body.tutorial-stepping .intro-images img {
+    display: none;
+}
+
+body.tutorial-stepping .stepping-images img {
+    display: block;
 }
 
 .macro-editor {
     position: relative;
-    border-top: 1px solid #333333;
     width: 1000px;
     margin: 3em 0;
     margin-left: -150px;
+    background-color: #333333;
 }
 
 .macro-editor:after {
     content: ' ';
     clear: both;
     display: block;
+}
+
+.macro-editor .content {
+    position: relative;
+    overflow: hidden;
+}
+
+div.CodeMirror {
+    padding: 1em;
+    float: left;
+    height: auto;
+}
+
+div.CodeMirror.output,
+div.CodeMirror.expanded {
+    border-left: 1px dashed #333333;
+}
+
+div.CodeMirror.cm-s-ambiance {
+    box-shadow: none;
 }
 
 .status {
@@ -53,32 +101,128 @@ div.CodeMirror:nth-of-type(2n).cm-s-ambiance {
     bottom: auto;
 }
 
+/* how farcical. */
+
+.stepping .controls button {
+    display: none;
+}
+
+.stepper .controls button {
+    display: inline;
+}
+
 .controls {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    height: 3.25em;
+    background-color: #333333;
+    clear: both;
     text-align: center;
-    background-color: #f9f9f9;
-    border: 1px solid #d9d9d9;
+}
+
+.controls .permalink {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 30px;
+    margin: 1.1em;
+}
+
+/* stepper */
+
+.stepper {
+    position: absolute;
+    top: -100%;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 200;
+    background-color: #222222;
+    transition: top .7s;
+}
+
+.stepper .content {
+    height: 0;
+}
+
+.stepping .stepper {
+    top: 0;
+}
+
+.stepping .controls .basic {
+    left: -100%;
+}
+
+.stepping .controls .stepper {
+    left: 0;
+}
+
+@keyframes fade {
+    from { background-color: #226831; }
+    to { background-color: #5CB85C; }
+}
+ 
+@-webkit-keyframes fade {
+    from { background-color: #333333; }
+    to { background-color: #5CB85C; }
+}
+
+.title {
+    display: none;
+    width: 100%;
+    animation: fade 1000ms infinite alternate forwards;
+    -webkit-animation: fade 1000ms infinite alternate forwards;
+    color: white;
+    text-align: center;
+    line-height: 1.5em;
+    margin-top: -1.5em;
+}
+
+.stepping .title {
+    display: block;
 }
 
 .controls button {
     display: inline-block;
-    margin: .25em;
+    margin: .75em .25em;
     font-size: .9em;
-    border-top: 1px solid #d0d0d0;
-    border-left: 1px solid #d0d0d0;
-    border-bottom: 1px solid #a0a0a0;
-    border-right: 1px solid #a0a0a0;
-    background-color: #d9d9d9;
-    width: 5em;
-}
-
-.controls button:nth-of-type(2n) {
-    margin-left: 0;
-}
-
-.CodeMirror {
-  height: auto;
+    background-color: #5CB85C;
+    border: 0;
+    border-radius: 3px;
+    padding: .25em .5em;
+    color: white;
+    padding: .25em 1em;
 }
 
 /* .CodeMirror-scroll { */
 /*   overflow: auto; */
 /* } */
+
+@media screen and (max-width: 1050px) {
+    .controls {
+        display: none;
+    }
+    
+    .macro-editor {
+        width: 500px;
+        margin: 0 auto;
+    }
+ 
+    div.CodeMirror {
+        float: none;
+    }    
+
+    div.CodeMirror.output {
+        border: 0;
+        border-top: 1px dashed #333333;
+    }
+
+    .intro-images, .stepping-images {
+        display: none;
+    }
+
+    .stepper {
+        display: none;
+    }
+}
