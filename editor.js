@@ -78,13 +78,15 @@ document.addEventListener('DOMContentLoaded', function() {
     var inputMirror = CodeMirror(innerEl[0], {
       value: content,
       mode:  'javascript',
-      theme: 'ambiance'
+      theme: 'ambiance',
+      smartIndent: false
     });
 
     var outputMirror = CodeMirror(innerEl[0], {
       mode:  'javascript',
       theme: 'ambiance',
-      readOnly: true
+      readOnly: true,
+      smartIndent: false
     });
 
     var h = el.find('.CodeMirror:first-child').height();
@@ -136,7 +138,8 @@ document.addEventListener('DOMContentLoaded', function() {
       var srcMirror = CodeMirror(inner[0], {
         mode:  'javascript',
         theme: 'ambiance',
-        readOnly: true
+        readOnly: true,
+        smartIndent: false
       });
       srcMirror.setSize('50%', '100%');
       srcMirror.setValue(inputMirror.getValue());
@@ -144,7 +147,8 @@ document.addEventListener('DOMContentLoaded', function() {
       stepMirror = CodeMirror(inner[0], {
         mode:  'javascript',
         theme: 'ambiance',
-        readOnly: true
+        readOnly: true,
+        smartIndent: false
       });
       stepMirror.setSize('50%', '100%');
       stepMirror.setValue('// step once to see output');
@@ -273,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // display sweet.js version
 
-  $('.sweet-version').text('commit 7f445802e0da9eb3a0468aaf927cfbf8c89f1c46 on Jan 21');
+  $('.sweet-version').text('commit e62944503771bb3289eecfdcfd17d78759077577 on Jan 28');
 
   // changes
 
@@ -350,15 +354,49 @@ document.addEventListener('DOMContentLoaded', function() {
       'foo baz();',
 
     // fourth example
-    7: 'macro tag {\n' +
-      '  rule { $name [$el ...] } => {\n' +
-      '    [$name, $el]\n' +
+    7: 'let foo = macro {\n' +
+      '  rule { { $expr:expr } } => {\n' +
+      '    foo ($expr + 3)\n' +
       '  }\n\n' +
-      '  rule { $name $id:ident } => {\n' +
-      '    ($id.unshift($name), $id)\n' +
+      '  rule { ($expr:expr) } => {\n' +
+      '    "expression: " + $expr\n' +
       '  }\n' +
       '}\n\n' +
-      'tag "foo" [1, 2, 3];\n' +
-      'tag "bar" arr;\n'
+      'foo { 1 + 2 }\n',
+
+    ex8a: 'macro basic {\n' +
+      '  rule { { $x (,) ... } } => {\n' +
+      '    wrapped($x (,) ...);\n' +
+      '  }\n' +
+      '}\n\n' +
+      'basic {}\n' +
+      'basic { x, y, z }\n',
+
+    ex8b: 'let function = macro {\n' +
+      '  rule { $name ($args (,) ...) { $body ... } } => {\n' +
+      '    function $name($args (,) ...) {\n' +
+      '      console.log("called");\n' +
+      '      $body ...\n' +
+      '    }\n' +
+      '  }\n' +
+      '}\n\n' +
+      'function bar() {\n' +
+      '  var x = 2, y = 5;\n' +
+      '  console.log(\'hello\');\n' +
+      '}',
+
+    ex8c: 'let var = macro {\n' +
+      '  rule { $([$name] = $expr:expr) (,) ... } => {\n' +
+      '    $(var $name = $expr[0]) ...\n' +
+      '  }\n' +
+      '}\n\n' +
+      'var [x] = arr, [y] = bar();\n',
+
+    ex8d: 'macro foo {\n' +
+      '  rule { [$([$name ...] -> $init) (,) ...] } => {\n' +
+      '    $($(var $name = $init;) ...) ...\n' +
+      '  }\n' +
+      '}\n\n' +
+      'foo [[x y z] -> 3, [bar baz] -> 10]'
   };
 });

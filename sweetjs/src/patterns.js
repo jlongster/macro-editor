@@ -1,14 +1,14 @@
 (function (root, factory) {
     if (typeof exports === 'object') {
         // CommonJS
-        factory(exports, require('underscore'), require("es6-collections"),
+        factory(exports, require('underscore'),
                 require("./parser"), require("./expander"), require("./syntax"));
     } else if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define(['exports', 'underscore', 'es6-collections',
+        define(['exports', 'underscore',
                 'parser', 'expander', 'syntax'], factory);
     }
-}(this, function(exports, _, es6, parser, expander, syntax) {
+}(this, function(exports, _, parser, expander, syntax) {
 
     var get_expression = expander.get_expression;
     var syntaxFromToken = syntax.syntaxFromToken;
@@ -396,7 +396,7 @@
                     if (restMatch.success) {
                         // match the repeat pattern on the empty array to fill in its
                         // pattern variable in the environment 
-                        match = matchPattern(pattern, [], env, patternEnv);
+                        match = matchPattern(pattern, [], env, patternEnv, topLevel);
                         patternEnv = _.extend(restMatch.patternEnv, match.patternEnv);
                         rest = restMatch.rest;
                         break patternLoop;
@@ -416,7 +416,7 @@
                         }
                     }
                 }
-                match = matchPattern(pattern, rest, env, patternEnv);
+                match = matchPattern(pattern, rest, env, patternEnv, topLevel);
                 if (!match.success && pattern.repeat) {
                     // a repeat can match zero tokens and still be a
                     // "success" so break out of the inner loop and
@@ -514,7 +514,7 @@
         "$y" : ...
     }
     */
-    function matchPattern(pattern, stx, env, patternEnv) {
+    function matchPattern(pattern, stx, env, patternEnv, topLevel) {
         var subMatch;
         var match, matchEnv;
         var rest;
@@ -562,7 +562,8 @@
                         // initialize if we haven't done so already
                         patternEnv[patternKey] = {
                             level: nextLevel,
-                            match: [subMatch.patternEnv[patternKey]]
+                            match: [subMatch.patternEnv[patternKey]],
+                            topLevel: topLevel
                         };
                     }
                 } else {
@@ -592,7 +593,8 @@
                 rest = match.rest;
                 matchEnv = {
                     level: 0,
-                    match: match.result
+                    match: match.result,
+                    topLevel: topLevel
                 };
 
                 // push the match onto this value's slot in the environment
@@ -603,7 +605,8 @@
                         // initialize if necessary
                         patternEnv[pattern.value] = {
                             level: 1,
-                            match: [matchEnv]
+                            match: [matchEnv],
+                            topLevel: topLevel
                         };
                     }
                 } else {
@@ -658,7 +661,7 @@
         // We need to reverse the matches for any top level repeaters because
         // they match in reverse, and thus put their results in backwards.
         _.forEach(patternEnv, function(val, key) {
-            if (val.level && val.match) {
+            if (val.level && val.match && val.topLevel) {
                 val.match.reverse();
             }
         });
@@ -846,10 +849,16 @@
                         push.apply(acc, takeLineContext(bodyStx, env[bodyStx.token.value].match));
                         return acc;
                     }
-                    acc.push(bodyStx);
+                    acc.push(syntaxFromToken(_.clone(bodyStx.token), bodyStx));
                     return acc;
                 }
             }, []).value();
+    }
+
+    function extendEnv(env) {
+        var newEnv = _.clone(env);
+        newEnv.parent = env;
+        return newEnv;
     }
 
     exports.loadPattern = loadPattern;
@@ -860,4 +869,5 @@
     exports.takeLineContext = takeLineContext;
     exports.takeLine = takeLine;
     exports.typeIsLiteral = typeIsLiteral;
+    exports.extendEnv = extendEnv;
 }))

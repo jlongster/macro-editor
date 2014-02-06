@@ -2053,10 +2053,13 @@ parseYieldExpression: true
             );
 
         var startIndex = streamIndex > 3 ? streamIndex - 3 : 0;
-        var toks = tokenStream.slice(startIndex, streamIndex + 3).map(function(stx) {
-            return stx.token.value;
-        }).join(' ');
-        var tailingMsg = "\n[... " + toks + " ...]";
+        var toks = "", tailingMsg = "";
+        if (tokenStream) {
+            toks = tokenStream.slice(startIndex, streamIndex + 3).map(function(stx) {
+                return stx.token.value;
+            }).join(' ');
+            tailingMsg = "\n[... " + toks + " ...]";
+        }
         if (typeof token.lineNumber === 'number') {
             error = new Error('Line ' + token.lineNumber + ': ' + msg + tailingMsg);
             error.index = token.range[0];
@@ -2464,7 +2467,7 @@ parseYieldExpression: true
     }
 
     function parseTemplateElement(option) {
-        var token = scanTemplateElement(option);
+        var token = lex();
         if (strict && token.octal) {
             throwError(token, Messages.StrictOctalLiteral);
         }
@@ -5774,7 +5777,7 @@ parseYieldExpression: true
             }
         }
 
-        extra = {loc: true};
+        extra = {loc: true, errors: []};
         patch();
         try {
             program = parseProgram();

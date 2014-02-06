@@ -1,12 +1,12 @@
 (function (root, factory) {
     if (typeof exports === 'object') {
         // CommonJS
-        factory(exports, require('underscore'), require("es6-collections"),  require("./parser"), require("./expander"));
+        factory(exports, require('underscore'),  require("./parser"), require("./expander"));
     } else if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define(['exports', 'underscore', 'es6-collections', 'parser', 'expander'], factory);
+        define(['exports', 'underscore', 'parser', 'expander'], factory);
     }
-}(this, function(exports, _, es6, parser, expander) {
+}(this, function(exports, _, parser, expander) {
 
     function assert(condition, message) {
         if (!condition) {
@@ -46,9 +46,8 @@
         // non mutating
         mark: function(newMark) {
             if (this.token.inner) {
-                var next = syntaxFromToken(this.token, this);
-                next.deferredContext = new Mark(newMark, this.deferredContext);
-                return next;
+                return syntaxFromToken(this.token, {deferredContext: new Mark(newMark, this.deferredContext),
+                                                    context: new Mark(newMark, this.context)});
             }
             return syntaxFromToken(this.token, {context: new Mark(newMark, this.context)});
         },
@@ -56,27 +55,22 @@
         // (CSyntax or [...CSyntax], Str) -> CSyntax
         // non mutating
         rename: function(id, name, defctx) {
-            // deferr renaming of delimiters
+            // defer renaming of delimiters
             if (this.token.inner) {
-                var next = syntaxFromToken(this.token, this);
-                next.deferredContext = new Rename(id, name, this.deferredContext, defctx);
-                return next;
+                return syntaxFromToken(this.token, 
+                                       {deferredContext: new Rename(id, name, this.deferredContext, defctx),
+                                        context: new Rename(id, name, this.context, defctx)});
             }
 
-            if (this.token.type === parser.Token.Identifier ||
-                this.token.type === parser.Token.Keyword ||
-                this.token.type === parser.Token.Punctuator) {
-                return syntaxFromToken(this.token, {context: new Rename(id, name, this.context, defctx)});
-            } else {
-                return this;
-            }
+            return syntaxFromToken(this.token, 
+                                   {context: new Rename(id, name, this.context, defctx)});
         },
 
         addDefCtx: function(defctx) {
             if (this.token.inner) {
-                var next = syntaxFromToken(this.token, this);
-                next.deferredContext = new Def(defctx, this.deferredContext);
-                return next;
+                return syntaxFromToken(this.token, 
+                                       {deferredContext: new Def(defctx, this.deferredContext),
+                                        context: new Def(defctx, this.context)});
             }
             return syntaxFromToken(this.token, {context: new Def(defctx, this.context)});
         },
@@ -115,9 +109,9 @@
 
             this.token.inner = _.map(this.token.inner, _.bind(function(stx) {
                 if (stx.token.inner) {
-                    var next = syntaxFromToken(stx.token, stx);
-                    next.deferredContext = applyContext(stx.deferredContext, this.deferredContext);
-                    return next;
+                    return syntaxFromToken(stx.token, 
+                                           {deferredContext: applyContext(stx.deferredContext, this.deferredContext),
+                                            context: applyContext(stx.context, this.deferredContext)});
                 } else {
                     return syntaxFromToken(stx.token,
                                            {context: applyContext(stx.context, this.deferredContext)});

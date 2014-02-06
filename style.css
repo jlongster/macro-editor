@@ -170,13 +170,15 @@ div.CodeMirror.cm-s-ambiance {
 
 .title {
     display: none;
+    position: absolute;
+    top: -1.5em;
     width: 100%;
     animation: fade 1000ms infinite alternate forwards;
     -webkit-animation: fade 1000ms infinite alternate forwards;
     color: white;
     text-align: center;
     line-height: 1.5em;
-    margin-top: -1.5em;
+    border-radius: 5px 5px 0 0;
 }
 
 .stepping .title {
@@ -215,6 +217,7 @@ button.step.disabled {
     .macro-editor {
         width: 500px;
         margin: 0 auto;
+        background-color: transparent;
     }
  
     div.CodeMirror {
@@ -223,7 +226,7 @@ button.step.disabled {
 
     div.CodeMirror.output {
         border: 0;
-        border-top: 1px dashed #333333;
+        margin-top: .5em;
     }
 
     .intro-images, .stepping-images {

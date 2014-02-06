@@ -25,19 +25,21 @@
 
 (function (root, factory) {
     if (typeof exports === 'object') {
-        // CommonJS
-        var parser = require("./parser");
-        var expander = require("./expander");
-        var syn = require("./syntax");
-        var codegen = require("escodegen");
-
         var path = require('path');
         var fs   = require('fs');
         var lib  = path.join(path.dirname(fs.realpathSync(__filename)), "../macros");
 
         var stxcaseModule = fs.readFileSync(lib + "/stxcase.js", 'utf8');
 
-        factory(exports, parser, expander, syn, stxcaseModule, codegen);
+        factory(exports,
+                require("underscore"),
+                require("./parser"),
+                require("./expander"),
+                require("./syntax"),
+                stxcaseModule,
+                require("escodegen"),
+                require("escope"),
+                fs);
 
         // Alow require('./example') for an example.sjs file.
         require.extensions['.sjs'] = function(module, filename) {
@@ -46,81 +48,103 @@
         };
     } else if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define(['exports', './parser', './expander', './syntax', 'text!./stxcase.js'], factory);
+        define(['exports',
+                'underscore',
+                './parser',
+                './expander',
+                './syntax',
+                'text!./stxcase.js',
+                null,
+                './escope'], factory);
     }
-}(this, function (exports, parser, expander, syn, stxcaseModule, gen) {
+}(this, function (exports, _, parser, expander, syn, stxcaseModule, gen, scope, fs) {
     var codegen = gen || escodegen;
+    var escope = scope || escope;
+    var expand = makeExpand(expander.expand);
+    var expandModule = makeExpand(expander.expandModule);
+    var stxcaseCtx;
 
-    // fun (Str) -> [...CSyntax]
-    function expand(code, globalMacros, maxExpands) {
-        var program, toString;
-        globalMacros = globalMacros || '';
+    function makeExpand(expandFn) {
+        // fun (Str) -> [...CSyntax]
+        return function expand(code, modules, maxExpands) {
+            var program, toString;
+            modules = modules || [];
 
-        toString = String;
-        if (typeof code !== 'string' && !(code instanceof String)) {
-            code = toString(code);
-        }
-        
-        var source = code;
+            if (!stxcaseCtx) {
+                stxcaseCtx = expander.expandModule(parser.read(stxcaseModule));
+            }
 
-        if (source.length > 0) {
-            if (typeof source[0] === 'undefined') {
-                // Try first to convert to a string. This is good as fast path
-                // for old IE which understands string indexing for string
-                // literals only and not for string object.
-                if (code instanceof String) {
-                    source = code.valueOf();
-                }
+            toString = String;
+            if (typeof code !== 'string' && !(code instanceof String)) {
+                code = toString(code);
+            }
+            
+            var source = code;
 
-                // Force accessing the characters via an array.
+            if (source.length > 0) {
                 if (typeof source[0] === 'undefined') {
-                    source = stringToArray(code);
+                    // Try first to convert to a string. This is good as fast path
+                    // for old IE which understands string indexing for string
+                    // literals only and not for string object.
+                    if (code instanceof String) {
+                        source = code.valueOf();
+                    }
+
+                    // Force accessing the characters via an array.
+                    if (typeof source[0] === 'undefined') {
+                        source = stringToArray(code);
+                    }
                 }
             }
-        }
 
-        var readTree = parser.read(source);
-        try {
-            return expander.expand(readTree, stxcaseModule + '\n' + globalMacros, maxExpands);
-        } catch(err) {
-            if (err instanceof syn.MacroSyntaxError) {
-                throw new SyntaxError(syn.printSyntaxError(source, err));
-            } else {
-                throw err;
+            var readTree = parser.read(source);
+            try {
+                return expandFn(readTree, [stxcaseCtx].concat(modules), maxExpands);
+            } catch(err) {
+                if (err instanceof syn.MacroSyntaxError) {
+                    throw new SyntaxError(syn.printSyntaxError(source, err));
+                } else {
+                    throw err;
+                }
             }
         }
     }
 
     // fun (Str, {}) -> AST
-    function parse(code, globalMacros, maxExpands) {
+    function parse(code, modules, maxExpands) {
         if (code === "") {
             // old version of esprima doesn't play nice with the empty string
             // and loc/range info so until we can upgrade hack in a single space
             code = " ";
         }
 
-        return parser.parse(expand(code, globalMacros, maxExpands));
+        return parser.parse(expand(code, modules, maxExpands));
     }
-
-
-
-    exports.expand = expand;
-    exports.parse = parse;
 
     // (Str, {sourceMap: ?Bool, filename: ?Str})
     //    -> { code: Str, sourceMap: ?Str }
-    exports.compile = function compile(code, options) {
+    function compile(code, options) {
         var output;
         options = options || {};
 
-        var ast = parse(code, options.macros);
+        var ast = parse(code, 
+                        options.modules || [],
+                        options.maxExpands);
+
+        if (options.readableNames) {
+            ast = optimizeHygiene(ast);
+        }
+
+        if (options.ast) {
+            return ast;
+        }
 
         if (options.sourceMap) {
-            output = codegen.generate(ast, {
+            output = codegen.generate(ast, _.extend({
                 comment: true,
                 sourceMap: options.filename,
                 sourceMapWithCode: true
-            });
+            }, options.escodegen));
 
             return {
                 code: output.code,
@@ -128,9 +152,106 @@
             };
         } 
         return {
-            code: codegen.generate(ast, {
+            code: codegen.generate(ast, _.extend({
                 comment: true
-            })
+            }, options.escodegen))
         };
     }
+
+    function loadNodeModule(root, moduleName) {
+        var Module = module.constructor;
+        var mock = {
+            id: root + "/$sweet-loader.js",
+            filename: "$sweet-loader.js",
+            paths: /^\.\/|\.\./.test(root) ? [root] : Module._nodeModulePaths(root)
+        };
+        var path = Module._resolveFilename(moduleName, mock);
+        return expandModule(fs.readFileSync(path, "utf8"));
+    }
+
+    function optimizeHygiene(ast) {
+        // escope hack: sweet doesn't rename global vars. We wrap in a closure
+        // to create a 'static` scope for all of the vars sweet renamed.
+        var wrapper = parse('(function(){})()');
+        wrapper.body[0].expression.callee.body.body = ast.body;
+
+        function sansUnique(name) {
+            var match = name.match(/^(.+)\$[\d]+$/);
+            return match ? match[1] : null;
+        }
+
+        function wouldShadow(name, scope) {
+            while (scope) {
+                if (scope.scrubbed && scope.scrubbed.has(name)) {
+                    return scope.scrubbed.get(name);
+                }
+                scope = scope.upper;
+            }
+            return 0;
+        }
+
+        var scopes = escope.analyze(wrapper).scopes;
+        var globalScope;
+
+        // The first pass over the scope collects any non-static references,
+        // which means references from the global scope. We need to make these
+        // verboten so we don't accidently mangle a name to match. This could
+        // cause seriously hard to find bugs if you were just testing with
+        // --readable-names on.
+        scopes.forEach(function(scope) {
+            scope.scrubbed = new expander.StringMap();
+
+            // There aren't any references declared in the global scope since
+            // we wrapped our input in a static closure.
+            if (!scope.isStatic()) {
+                globalScope = scope;
+                return;
+            }
+
+            scope.references.forEach(function(ref) {
+                if (!ref.isStatic()) {
+                    globalScope.scrubbed.set(ref.identifier.name, 1);
+                }
+            });
+        });
+
+        // The second pass mangles the names to get rid of the hygiene tag
+        // wherever possible.
+        scopes.forEach(function(scope) {
+            // No need to rename things in the global scope.
+            if (!scope.isStatic()) {
+                return;
+            }
+
+            scope.variables.forEach(function(variable) {
+                var name = sansUnique(variable.name);
+                if (!name) {
+                    return;
+                }
+                var level = wouldShadow(name, scope);
+                if (level) {
+                    scope.scrubbed.set(name, level + 1);
+                    name = name + '$' + (level + 1);
+                } else {
+                    scope.scrubbed.set(name, 1);
+                }
+                variable.identifiers.forEach(function(i) {
+                    i.name = name;
+                });
+                variable.references.forEach(function(r) {
+                    r.identifier.name = name;
+                });
+            });
+        });
+
+        return ast;
+    }
+
+    exports.expand = expand;
+    exports.parse = parse;
+    exports.compile = compile;
+    exports.loadModule = expandModule;
+    exports.loadNodeModule = loadNodeModule;
 }));
+
+
