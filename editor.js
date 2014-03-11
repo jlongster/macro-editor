@@ -277,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // display sweet.js version
 
-  $('.sweet-version').text('commit e62944503771bb3289eecfdcfd17d78759077577 on Jan 28');
+  $('.sweet-version').text('commit ba9b6771678cb26af58dfa6b5b99d5b7eac75e2c on Mar 9');
 
   // changes
 

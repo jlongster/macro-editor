@@ -25,11 +25,27 @@
 
 (function (root, factory) {
     if (typeof exports === 'object') {
-        var path = require('path');
-        var fs   = require('fs');
+        var path        = require('path');
+        var fs          = require('fs');
+        var resolveSync = require('resolve/lib/sync');
+        var codegen     = require('escodegen');
+        
         var lib  = path.join(path.dirname(fs.realpathSync(__filename)), "../macros");
 
         var stxcaseModule = fs.readFileSync(lib + "/stxcase.js", 'utf8');
+
+        var moduleCache = {};
+        var cwd = process.cwd();
+
+        var requireModule = function(id, filename) {
+            var basedir = filename ? path.dirname(filename) : cwd;
+            var key = basedir + id;
+
+            if (!moduleCache[key]) {
+                moduleCache[key] = require(resolveSync(id, {basedir: basedir}));
+            }
+            return moduleCache[key];
+        }
 
         factory(exports,
                 require("underscore"),
@@ -39,7 +55,10 @@
                 stxcaseModule,
                 require("escodegen"),
                 require("escope"),
-                fs);
+                fs,
+                path,
+                resolveSync,
+                requireModule);
 
         // Alow require('./example') for an example.sjs file.
         require.extensions['.sjs'] = function(module, filename) {
@@ -53,20 +72,20 @@
                 './parser',
                 './expander',
                 './syntax',
-                'text!./stxcase.js',
-                null,
-                './escope'], factory);
+                'text!./stxcase.js', 
+                'escodegen', 
+                'escope'], factory);
     }
-}(this, function (exports, _, parser, expander, syn, stxcaseModule, gen, scope, fs) {
-    var codegen = gen || escodegen;
-    var escope = scope || escope;
+}(this, function (exports, _, parser, expander, syn, stxcaseModule, gen, escope, fs, path, resolveSync, requireModule) {
+    // escodegen still doesn't quite support AMD: https://github.com/Constellation/escodegen/issues/115
+    var codegen = typeof escodegen !== "undefined" ? escodegen : gen;
     var expand = makeExpand(expander.expand);
     var expandModule = makeExpand(expander.expandModule);
     var stxcaseCtx;
 
     function makeExpand(expandFn) {
         // fun (Str) -> [...CSyntax]
-        return function expand(code, modules, maxExpands) {
+        return function expand(code, modules, options) {
             var program, toString;
             modules = modules || [];
 
@@ -99,7 +118,7 @@
 
             var readTree = parser.read(source);
             try {
-                return expandFn(readTree, [stxcaseCtx].concat(modules), maxExpands);
+                return expandFn(readTree, [stxcaseCtx].concat(modules), options);
             } catch(err) {
                 if (err instanceof syn.MacroSyntaxError) {
                     throw new SyntaxError(syn.printSyntaxError(source, err));
@@ -111,14 +130,14 @@
     }
 
     // fun (Str, {}) -> AST
-    function parse(code, modules, maxExpands) {
+    function parse(code, modules, options) {
         if (code === "") {
             // old version of esprima doesn't play nice with the empty string
             // and loc/range info so until we can upgrade hack in a single space
             code = " ";
         }
 
-        return parser.parse(expand(code, modules, maxExpands));
+        return parser.parse(expand(code, modules, options));
     }
 
     // (Str, {sourceMap: ?Bool, filename: ?Str})
@@ -126,10 +145,11 @@
     function compile(code, options) {
         var output;
         options = options || {};
+        options.requireModule = options.requireModule || requireModule;
 
         var ast = parse(code, 
                         options.modules || [],
-                        options.maxExpands);
+                        options);
 
         if (options.readableNames) {
             ast = optimizeHygiene(ast);
@@ -158,15 +178,19 @@
         };
     }
 
-    function loadNodeModule(root, moduleName) {
-        var Module = module.constructor;
-        var mock = {
-            id: root + "/$sweet-loader.js",
-            filename: "$sweet-loader.js",
-            paths: /^\.\/|\.\./.test(root) ? [root] : Module._nodeModulePaths(root)
-        };
-        var path = Module._resolveFilename(moduleName, mock);
-        return expandModule(fs.readFileSync(path, "utf8"));
+    function loadNodeModule(root, moduleName, options) {
+        options = options || {};
+        if (moduleName[0] === '.') {
+            moduleName = path.resolve(root, moduleName)
+        }
+        var filename = resolveSync(moduleName, {
+            basedir: root,
+            extensions: ['.js', '.sjs']
+        });
+        return expandModule(fs.readFileSync(filename, "utf8"), undefined, {
+            filename: moduleName,
+            requireModule: options.requireModule || requireModule
+        });
     }
 
     function optimizeHygiene(ast) {

@@ -269,7 +269,7 @@
         }, [_.first(tojoin)]);
     }
     // ([...[...CSyntax]], Str) -> [...CSyntax]
-    function joinSyntaxArr(tojoin, punc) {
+    function joinSyntaxArray(tojoin, punc) {
         if (tojoin.length === 0) {
             return [];
         }
@@ -282,6 +282,15 @@
             return acc;
         }, _.first(tojoin));
     }
+    function cloneSyntaxArray(arr) {
+        return arr.map(function (stx) {
+            var o = syntaxFromToken(_.clone(stx.token), stx);
+            if (o.token.type === parser.Token.Delimiter) {
+                o.token.inner = cloneSyntaxArray(o.token.inner);
+            }
+            return o;
+        });
+    }
     function MacroSyntaxError(name, message, stx) {
         this.name = name;
         this.message = message;
@@ -292,6 +301,12 @@
             stx = stx[0];
         }
         throw new MacroSyntaxError(name, message, stx);
+    }
+    function SyntaxCaseError(message) {
+        this.message = message;
+    }
+    function throwSyntaxCaseError(message) {
+        throw new SyntaxCaseError(message);
     }
     function printSyntaxError(code, err) {
         if (!err.stx) {
@@ -379,10 +394,13 @@
     exports$2.tokensToSyntax = tokensToSyntax;
     exports$2.syntaxToTokens = syntaxToTokens;
     exports$2.joinSyntax = joinSyntax;
-    exports$2.joinSyntaxArr = joinSyntaxArr;
+    exports$2.joinSyntaxArray = joinSyntaxArray;
+    exports$2.cloneSyntaxArray = cloneSyntaxArray;
     exports$2.prettyPrint = prettyPrint;
     exports$2.MacroSyntaxError = MacroSyntaxError;
     exports$2.throwSyntaxError = throwSyntaxError;
+    exports$2.SyntaxCaseError = SyntaxCaseError;
+    exports$2.throwSyntaxCaseError = throwSyntaxCaseError;
     exports$2.printSyntaxError = printSyntaxError;
 }));
 //# sourceMappingURL=syntax.js.map
