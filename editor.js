@@ -89,9 +89,9 @@ document.addEventListener('DOMContentLoaded', function() {
       smartIndent: false
     });
 
-    var h = el.find('.CodeMirror:first-child').height();
+    var r = el.find('.CodeMirror:first-child')[0].getBoundingClientRect();
     inputMirror.setSize('500px', null);
-    outputMirror.setSize('500px', h);
+    outputMirror.setSize('500px', r.height);
 
     var both = el.find('.CodeMirror');
     $(both[0]).addClass('input');
@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
         '  <button class="open-stepper">Open Stepper</button>' +
         '</div>'
     );
-    
+
     if(el.attr('id')) {
       innerEl.find('.controls').append(
         '  <a href="#' + el.attr('id') + '" class="permalink">' +
@@ -132,8 +132,8 @@ document.addEventListener('DOMContentLoaded', function() {
       var container = $(e.target).parents('.macro-editor').addClass('stepping');
       var inner = container.find('.stepper .content');
 
-      var h = el.find('.CodeMirror:first-child').height();
-      inner.height(h);
+      var r = el.find('.CodeMirror:first-child')[0].getBoundingClientRect();
+      inner.height(r.height);
 
       var srcMirror = CodeMirror(inner[0], {
         mode:  'javascript',
@@ -197,8 +197,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     inputMirror.on('change', function() {
-      var h = el.find('.CodeMirror.input').height();
-      outputMirror.setSize(width / 2, h);
+      var r = el.find('.CodeMirror.input')[0].getBoundingClientRect();
+      outputMirror.setSize(width / 2, r.height);
       this.compile();
     }.bind(this));
 
@@ -227,9 +227,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // find the first editor above this link. start by finding the
     // first parent right under the article
     var parent = $(this);
+    var i = 0;
     do {
       parent = parent.parent();
-    } while(!parent.parent().is('article'));
+    } while(!parent.parent().parent().is('article'));
 
     // zepto doesn't have prevAll, which is stupid
     var node = parent;
@@ -397,6 +398,16 @@ document.addEventListener('DOMContentLoaded', function() {
       '    $($(var $name = $init;) ...) ...\n' +
       '  }\n' +
       '}\n\n' +
-      'foo [[x y z] -> 3, [bar baz] -> 10]'
+      'foo [[x y z] -> 3, [bar baz] -> 10]',
+
+    rec1: 'macro randomized {\n' +
+      '  rule { RANDOM $var } => {\n' +
+      '    $var = Math.random()\n' +
+      '  }\n\n' +
+      '  rule { $var (,) ...; } => {\n' +
+      '    $(randomized RANDOM $var) (,) ...\n' +
+      '  }\n' +
+      '}\n\n' +
+      'randomized x, y, z;'
   };
 });

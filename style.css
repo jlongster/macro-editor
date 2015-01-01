@@ -69,11 +69,12 @@ div.CodeMirror {
     padding: 1em;
     float: left;
     height: auto;
+    font-size: .85em;
 }
 
 div.CodeMirror.output,
 div.CodeMirror.expanded {
-    border-left: 1px dashed #333333;
+    border-left: 1px solid #666666;
 }
 
 div.CodeMirror.cm-s-ambiance {
